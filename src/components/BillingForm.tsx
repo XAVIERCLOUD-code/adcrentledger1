@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { sendTenantNotification } from "@/utils/emailService";
 
 interface BillingFormProps {
   tenant: Tenant;
@@ -18,6 +19,7 @@ const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
   const { addBill, isLoading } = useAppStore();
   const [amount, setAmount] = useState<string>("");
   const [month, setMonth] = useState<string>("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     // Auto-fill generic total due
@@ -68,13 +70,44 @@ const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
       createdAt: new Date().toISOString().split("T")[0],
     };
 
+    setIsSendingEmail(true);
     await addBill(newBill);
 
-    toast({
-      title: "Bill Created",
-      description: `Bill for ${month} has been created.`,
-    });
+    // Send automated email if tenant has an email address
+    if (tenant.email) {
+      const emailResult = await sendTenantNotification({
+        to_name: tenant.contactPerson || tenant.name,
+        to_email: tenant.email,
+        month: new Date(month + "-01").toLocaleString('default', { month: 'long', year: 'numeric' }),
+        unit: tenant.unit || "N/A",
+        rent: `PHP ${parseFloat(amount).toLocaleString()}`,
+        electric_usage: "0",
+        electric_bill: "PHP 0.00",
+        water_usage: "0",
+        water_bill: "PHP 0.00",
+        total_amount: `PHP ${parseFloat(amount).toLocaleString()}`,
+      });
 
+      if (emailResult.success) {
+        toast({
+          title: "Bill Created & Emailed",
+          description: `Bill for ${month} created and emailed to ${tenant.email}.`,
+        });
+      } else {
+        toast({
+          title: "Bill Created (Email Failed)",
+          description: `Bill created, but failed to send email: ${emailResult.error}`,
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Bill Created",
+        description: `Bill for ${month} has been created. (No email on file to notify)`,
+      });
+    }
+
+    setIsSendingEmail(false);
     onSuccess();
   };
 
@@ -117,11 +150,11 @@ const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? (
+        <Button type="submit" disabled={isLoading || isSendingEmail}>
+          {isLoading || isSendingEmail ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
+              {isSendingEmail ? "Creating & Emailing..." : "Creating..."}
             </>
           ) : "Create Bill"}
         </Button>
