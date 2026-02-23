@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, Download, Users, Banknote, AlertTriangle, UserPlus, Trash2, ArrowUpRight, Filter, Loader2 } from "lucide-react";
+import { Building2, Download, Users, Banknote, AlertTriangle, UserPlus, Trash2, ArrowUpRight, Filter, Loader2, CalendarClock } from "lucide-react";
 import { exportToCSV } from "@/utils/export";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/utils/supabaseClient"; // Added import for supabase
@@ -159,6 +159,68 @@ const Dashboard = () => {
               >
                 View Details <ArrowUpRight className="h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Escalation Alert */}
+      {!isViewer && (() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+
+        const escalatingTenants = tenants.filter(t => {
+          if (!t.leaseStart || !t.escalationDetails || t.escalationDetails.toLowerCase() === "none") return false;
+
+          const leaseStart = new Date(t.leaseStart);
+          const yearsActive = currentYear - leaseStart.getFullYear();
+
+          if (yearsActive < 3) return false;
+
+          // Target anniversary for the current year
+          const anniversaryDate = new Date(currentYear, leaseStart.getMonth(), leaseStart.getDate());
+
+          // Calculate difference in days between today and anniversary
+          const diffTime = anniversaryDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          // Trigger alert 30 days BEFORE the anniversary
+          return diffDays >= 0 && diffDays <= 30;
+        });
+
+        if (escalatingTenants.length === 0) return null;
+
+        return (
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 text-blue-400 shadow-sm flex items-start gap-4 hover:bg-blue-500/10 transition-colors">
+            <div className="p-2 bg-blue-500/20 rounded-full shrink-0">
+              <CalendarClock className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="space-y-2 w-full">
+              <h3 className="font-semibold text-lg flex items-center gap-2 text-blue-300">
+                Rent Escalation Reminder
+                <span className="text-xs font-medium bg-blue-500/20 px-2 py-0.5 rounded-full text-blue-300 border border-blue-500/30">
+                  {escalatingTenants.length} upcoming
+                </span>
+              </h3>
+              <p className="text-sm opacity-90">
+                The following tenants are approaching their contract anniversary and may be due for a rent increase:
+              </p>
+              <div className="grid gap-2 mt-2">
+                {escalatingTenants.map(t => {
+                  const anniv = new Date(currentYear, new Date(t.leaseStart!).getMonth(), new Date(t.leaseStart!).getDate());
+                  return (
+                    <div key={t.id} className="bg-background/40 backdrop-blur-sm p-3 rounded-lg border border-border/50 flex justify-between items-center text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-foreground">{t.name} <span className="text-muted-foreground font-normal">({t.unit})</span></span>
+                        <span className="text-muted-foreground text-xs mt-0.5">Anniversary: <span className="text-blue-400 font-medium">{anniv.toDateString()}</span></span>
+                      </div>
+                      <div className="bg-blue-500/10 px-3 py-1.5 rounded-md text-blue-300 border border-blue-500/20 text-xs font-medium text-right max-w-[200px] truncate" title={t.escalationDetails}>
+                        {t.escalationDetails}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         );
