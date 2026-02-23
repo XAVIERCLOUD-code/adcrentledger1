@@ -34,6 +34,8 @@ export const useAppStore = create<AppState>((set, get) => ({
             if (tenantsRes.error) throw tenantsRes.error;
             if (billsRes.error) throw billsRes.error;
 
+            console.log("Supabase Fetch - First Tenant Structure:", tenantsRes.data?.[0]);
+
             set({ tenants: tenantsRes.data || [], bills: billsRes.data || [], isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });

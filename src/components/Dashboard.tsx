@@ -112,9 +112,11 @@ const Dashboard = () => {
   }
 
   if (selectedTenant) {
+    // Get the freshest version of the tenant from the store, fallback to local state if missing
+    const activeTenant = tenants.find(t => t.id === selectedTenant.id) || selectedTenant;
     return (
       <TenantProfile
-        tenant={selectedTenant}
+        tenant={activeTenant}
         onBack={() => { setSelectedTenant(null); fetchData(); }}
       />
     );
