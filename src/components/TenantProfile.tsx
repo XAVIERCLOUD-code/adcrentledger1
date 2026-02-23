@@ -41,6 +41,16 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   const [editContactName, setEditContactName] = useState(tenant.contactPerson || "");
   const [editEmail, setEditEmail] = useState(tenant.email || "");
 
+  // Edit Lease State
+  const [isEditingLease, setIsEditingLease] = useState(false);
+  const [editRent, setEditRent] = useState(tenant.rentGross.toString());
+  const [editLeaseStart, setEditLeaseStart] = useState(tenant.leaseStart || "");
+  const [editLeaseEnd, setEditLeaseEnd] = useState(tenant.leaseEnd || "");
+  const [editEscalationRate, setEditEscalationRate] = useState(tenant.escalationRate?.toString() || "");
+  const [editEscalationDetails, setEditEscalationDetails] = useState(tenant.escalationDetails || "");
+  const [editVat, setEditVat] = useState(tenant.vatPercent?.toString() || "");
+  const [editEwt, setEditEwt] = useState(tenant.ewtPercent?.toString() || "");
+
   // Year Filter State
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
@@ -56,6 +66,30 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
     await updateTenant(updatedTenant);
     setIsEditingContact(false);
     toast({ title: "Contact Details Updated", description: "Tenant contact information has been saved." });
+  };
+
+  const handleSaveLease = async () => {
+    const rentAmount = parseFloat(editRent);
+    if (isNaN(rentAmount) || rentAmount <= 0) {
+      toast({ title: "Invalid Rent", description: "Please enter a valid positive number for rent.", variant: "destructive" });
+      return;
+    }
+
+    const updatedTenant = {
+      ...tenant,
+      rentGross: rentAmount,
+      totalDue: rentAmount,
+      leaseStart: editLeaseStart || undefined,
+      leaseEnd: editLeaseEnd || undefined,
+      escalationRate: editEscalationRate ? parseFloat(editEscalationRate) : undefined,
+      escalationDetails: editEscalationDetails || undefined,
+      vatPercent: editVat ? parseFloat(editVat) : undefined,
+      ewtPercent: editEwt ? parseFloat(editEwt) : undefined,
+    };
+
+    await updateTenant(updatedTenant);
+    setIsEditingLease(false);
+    toast({ title: "Lease Details Updated", description: "Tenant lease information has been saved." });
   };
 
   const handleNotify = async (bill: BillRecord) => {
@@ -209,41 +243,142 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
 
           {/* Lease Info */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <Receipt className="h-4 w-4 text-indigo-500" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-500/10 rounded-lg">
+                  <Receipt className="h-4 w-4 text-indigo-500" />
+                </div>
+                <h3 className="font-semibold text-lg">Lease Information</h3>
               </div>
-              <h3 className="font-semibold text-lg">Lease Information</h3>
+              {!isEditingLease && !isViewer && (
+                <Button variant="ghost" size="icon" onClick={() => setIsEditingLease(true)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            <div className="space-y-4">
-              {/* ... (Existing Lease Info Content) ... */}
-              <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Monthly Rent</span>
-                <span className="font-mono font-bold text-lg">₱{(tenant.totalDue || tenant.rentGross).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Lease Start</span>
-                <span className="text-sm font-medium">{tenant.leaseStart || "N/A"}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">Escalation Rate</span>
-                <span className="text-sm font-medium">{tenant.escalationRate ? `${tenant.escalationRate}%` : "—"}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">VAT Rate</span>
-                <span className="text-sm font-medium">{tenant.vatPercent ? `${tenant.vatPercent}%` : "—"}</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-border/50">
-                <span className="text-sm text-muted-foreground">EWT Rate</span>
-                <span className="text-sm font-medium">{tenant.ewtPercent ? `${tenant.ewtPercent}%` : "—"}</span>
-              </div>
-              <div className="pt-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-md">
-                  <AlertCircle className="h-3 w-3" />
-                  <span>Contract active until {tenant.leaseEnd || "N/A"}</span>
+
+            {!isEditingLease ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">Monthly Rent</span>
+                  <span className="font-mono font-bold text-lg">₱{(tenant.totalDue || tenant.rentGross).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">Lease Start</span>
+                  <span className="text-sm font-medium">{tenant.leaseStart || "N/A"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">Lease End</span>
+                  <span className="text-sm font-medium">{tenant.leaseEnd || "N/A"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">Escalation Rate</span>
+                  <span className="text-sm font-medium">{tenant.escalationRate ? `${tenant.escalationRate}%` : "—"}</span>
+                </div>
+                <div className="flex flex-col py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">Escalation Details</span>
+                  <span className="text-sm font-medium mt-1">{tenant.escalationDetails || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">VAT Rate</span>
+                  <span className="text-sm font-medium">{tenant.vatPercent ? `${tenant.vatPercent}%` : "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-muted-foreground">EWT Rate</span>
+                  <span className="text-sm font-medium">{tenant.ewtPercent ? `${tenant.ewtPercent}%` : "—"}</span>
+                </div>
+                <div className="pt-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-md">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Contract active until {tenant.leaseEnd || "N/A"}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <Label htmlFor="lease-rent" className="text-xs">Monthly Rent (₱)</Label>
+                  <Input
+                    id="lease-rent"
+                    type="number"
+                    value={editRent}
+                    onChange={(e) => setEditRent(e.target.value)}
+                    className="h-8 text-sm font-mono"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lease-start" className="text-xs">Lease Start</Label>
+                    <Input
+                      id="lease-start"
+                      type="date"
+                      value={editLeaseStart}
+                      onChange={(e) => setEditLeaseStart(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lease-end" className="text-xs">Lease End</Label>
+                    <Input
+                      id="lease-end"
+                      type="date"
+                      value={editLeaseEnd}
+                      onChange={(e) => setEditLeaseEnd(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lease-esc-rate" className="text-xs">Escalation Rate (%)</Label>
+                    <Input
+                      id="lease-esc-rate"
+                      type="number"
+                      step="0.1"
+                      value={editEscalationRate}
+                      onChange={(e) => setEditEscalationRate(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lease-vat" className="text-xs">VAT Rate (%)</Label>
+                    <Input
+                      id="lease-vat"
+                      type="number"
+                      step="0.1"
+                      value={editVat}
+                      onChange={(e) => setEditVat(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lease-ewt" className="text-xs">EWT Rate (%)</Label>
+                  <Input
+                    id="lease-ewt"
+                    type="number"
+                    step="0.1"
+                    value={editEwt}
+                    onChange={(e) => setEditEwt(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lease-esc-details" className="text-xs">Escalation Details</Label>
+                  <Input
+                    id="lease-esc-details"
+                    value={editEscalationDetails}
+                    onChange={(e) => setEditEscalationDetails(e.target.value)}
+                    placeholder="e.g. 10% on 3rd year"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingLease(false)} className="h-7 text-xs">Cancel</Button>
+                  <Button size="sm" onClick={handleSaveLease} className="h-7 text-xs">Save</Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
