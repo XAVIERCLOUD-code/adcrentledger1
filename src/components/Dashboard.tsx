@@ -23,7 +23,8 @@ import {
 import { Building2, Download, Users, Banknote, AlertTriangle, UserPlus, Trash2, ArrowUpRight, Filter, Loader2, CalendarClock } from "lucide-react";
 import { exportToCSV } from "@/utils/export";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/utils/supabaseClient"; // Added import for supabase
+import { supabase } from "@/utils/supabaseClient";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -253,13 +254,15 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Add Tenant Form */}
-      {showAddForm && (
-        <AddTenantForm
-          onAdded={() => { refresh(); setShowAddForm(false); }}
-          onClose={() => setShowAddForm(false)}
-        />
-      )}
+      {/* Add Tenant Form Modal */}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-xl">
+          <AddTenantForm
+            onAdded={() => { fetchData(); setShowAddForm(false); }}
+            onClose={() => setShowAddForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Tenant List Header & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-8">

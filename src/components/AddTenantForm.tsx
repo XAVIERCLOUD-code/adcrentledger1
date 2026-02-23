@@ -58,9 +58,6 @@ const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
           <UserPlus className="h-4 w-4 text-primary" />
           Add New Tenant
         </h3>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
-          <X className="h-4 w-4" />
-        </Button>
       </div>
       <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
