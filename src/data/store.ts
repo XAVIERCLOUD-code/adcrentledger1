@@ -5,16 +5,16 @@ const BILLS_KEY = "adc_bills_v5";
 const EVENTS_KEY = "adc_events";
 // const REMINDERS_KEY = "adc_reminders"; // Already defined below
 const USER_KEY = "adc_user";
-const STAFF_KEY = "adc_staff_v1";
+const STAFF_KEY = "adc_staff_v2"; // Incremented to bypass old cache
 
 // --- Staff Directory ---
 const defaultStaff: Staff[] = [
   { id: "1", name: "Avelinda Monson", role: "CEO", info: ["Executive Management"], iconName: "Briefcase", color: "text-amber-500", bg: "bg-amber-500/10" },
-  { id: "2", name: "Adrianne Isobel Ramirez", role: "Admin Accounting Officer", info: ["Records & Billing"], iconName: "User", color: "text-blue-500", bg: "bg-blue-500/10" },
-  { id: "3", name: "Francis Delos Reyes", role: "Security", info: ["Pollution Control Officer", "Safety Inspector"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { id: "2", name: "Adrianne Isobel Ramirez", role: "Admin Accounting Officer", info: ["Records & Billing"], iconName: "User", color: "text-blue-500", bg: "bg-blue-500/10", imageUrl: "/Adrianne Isobel Ramirez.png" },
+  { id: "3", name: "Francis A. Delos Reyes", role: "Security", info: ["Pollution Control Officer", "Safety Inspector"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10", imageUrl: "/Francis A. Delos Reyes.png" },
   { id: "4", name: "Errol Rosero", role: "Security", info: ["Night Shift Guard"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { id: "5", name: "Danilo Donalino", role: "Security", info: ["Day Shift Guard"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { id: "6", name: "Sonny Bisco", role: "Security", info: ["Roving Guard"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { id: "5", name: "Danilo O. Dontalino", role: "Security", info: ["Day Shift Guard"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10", imageUrl: "/Danilo O. Dontalino.png" },
+  { id: "6", name: "Sonny V. Bisco", role: "Security", info: ["Roving Guard"], iconName: "Shield", color: "text-emerald-500", bg: "bg-emerald-500/10", imageUrl: "/Sonny V. Bisco.png" },
 ];
 
 export function getStaff(): Staff[] {
