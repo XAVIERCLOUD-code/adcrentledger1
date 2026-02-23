@@ -21,9 +21,6 @@ const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
   const [floor, setFloor] = useState<string>("");
   const [contactNumber, setContactNumber] = useState("");
   const [rent, setRent] = useState("");
-  const [escalationRate, setEscalationRate] = useState("");
-  const [vatPercent, setVatPercent] = useState("");
-  const [ewtPercent, setEwtPercent] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +44,6 @@ const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
       contactNumber: contactNumber.trim(),
       rentGross: rentAmount,
       totalDue: rentAmount, // Default to gross rent
-      escalationRate: escalationRate ? parseFloat(escalationRate) : undefined,
-      vatPercent: vatPercent ? parseFloat(vatPercent) : undefined,
-      ewtPercent: ewtPercent ? parseFloat(ewtPercent) : undefined,
     };
 
     await addTenant(tenant);
@@ -107,39 +101,6 @@ const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
             onChange={(e) => setRent(e.target.value)}
             placeholder="0.00"
             className="mt-1 font-mono"
-          />
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">Escalation Rate (%)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            value={escalationRate}
-            onChange={(e) => setEscalationRate(e.target.value)}
-            placeholder="e.g. 5"
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">VAT Rate (%)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            value={vatPercent}
-            onChange={(e) => setVatPercent(e.target.value)}
-            placeholder="e.g. 12"
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">EWT Rate (%)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            value={ewtPercent}
-            onChange={(e) => setEwtPercent(e.target.value)}
-            placeholder="e.g. 5"
-            className="mt-1"
           />
         </div>
         <div className="sm:col-span-2">
