@@ -23,6 +23,7 @@ import {
 import { Building2, Download, Users, Banknote, AlertTriangle, UserPlus, Trash2, ArrowUpRight, Filter, Loader2 } from "lucide-react";
 import { exportToCSV } from "@/utils/export";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/utils/supabaseClient"; // Added import for supabase
 import {
   Select,
   SelectContent,
@@ -46,12 +47,14 @@ const Dashboard = () => {
   // Month Filter State
   const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
 
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const user = getCurrentUser();
   const isViewer = user?.role === 'viewer';
+
 
   const filteredTenants = useMemo(
     () => (floorFilter === 0 ? tenants : tenants.filter((t) => t.floor === floorFilter)),
