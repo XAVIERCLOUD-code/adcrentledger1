@@ -127,10 +127,10 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
     setLoadingEmail(null);
   };
 
-  const handleTogglePaid = async (billId: string, currentStatus: boolean) => {
+  const handleTogglePaid = async (billId: string, newIsPaid: boolean) => {
     await toggleBillPaid(billId);
-    const newStatus = !currentStatus ? "Paid" : "Unpaid";
-    toast({ title: "Status Updated", description: `Bill marked as ${newStatus}` });
+    const statusText = newIsPaid ? "Paid" : "Unpaid";
+    toast({ title: "Status Updated", description: `Bill marked as ${statusText}` });
   };
 
   // Filter Logic
