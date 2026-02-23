@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmailJS Test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+            // Initialize with Public Key
+            emailjs.init("KcG3yoqbRjrxiajYo");
+        })();
+    </script>
+</head>
+
+<body>
+    <h1>EmailJS Test Page</h1>
+    <button onclick="sendEmail()">Send Test Email</button>
+    <div id="status" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const p = document.createElement('p');
+            p.textContent = message;
+            p.style.color = type === 'error' ? 'red' : 'green';
+            statusDiv.appendChild(p);
+            console.log(message);
+        }
+
+        function sendEmail() {
+            log("Attempting to send email...");
+
+            const serviceID = "service_gi8hm29";
+            const templateID = "template_2l5texn";
+            const templateParams = {
+                to_email: "test@example.com", // Replace with your email if needed
+                to_name: "Test User",
+                message: "This is a test email from the standalone debugger."
+            };
+
+            emailjs.send(serviceID, templateID, templateParams)
+                .then(function (response) {
+                    log('SUCCESS! status: ' + response.status + ', text: ' + response.text);
+                }, function (error) {
+                    log('FAILED... ' + JSON.stringify(error), 'error');
+                });
+        }
+    </script>
+</body>
+
+</html>

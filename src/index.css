@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --paid: 142 71% 45%;
+    --paid-foreground: 144 70% 96%;
+    --paid-glow: 142 71% 45% / 0.2;
+
+    --unpaid: 0 84% 60%;
+    --unpaid-foreground: 0 85% 97%;
+    --unpaid-glow: 0 84% 60% / 0.2;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 0 84% 60%;
+  }
+
+  /* PREMIUM DARK TECH THEME */
+  .dark {
+    /* Very deep, rich charcoal almost black */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    /* Slightly lighter than background, very subtle blue tint */
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    /* More vibrant electric blue for primary */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47.4% 11.2%;
+
+    /* Deeper secondary elements to fade into background */
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 47% 11%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Vibrant, glowing reds */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Subtle borders */
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20;
+    /* Optional: very subtle radial gradient for main background in dark mode */
+  }
+
+  .dark body {
+    background-image: radial-gradient(circle at 50% 0%, hsl(222 47% 11% / 0.4) 0%, transparent 70%);
+  }
+}
+
+@layer utilities {
+  .subtle-shadow {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 ease-out will-change-transform;
+  }
+
+  .card-hover:hover {
+    @apply -translate-y-1 shadow-lg shadow-primary/5 ring-1 ring-primary/20;
+  }
+
+  /* Status Badges */
+  .status-paid {
+    background-color: hsl(var(--paid) / 0.15);
+    color: hsl(var(--paid));
+    border: 1px solid hsl(var(--paid) / 0.2);
+  }
+
+  .status-unpaid {
+    background-color: hsl(var(--unpaid) / 0.15);
+    color: hsl(var(--unpaid));
+    border: 1px solid hsl(var(--unpaid) / 0.2);
+  }
+
+  /* Advanced Glassmorphism */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .glass-panel {
+    background: rgba(10, 15, 26, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card-header {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .dark .glass-card-header {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Buttons */
+  .btn-transition {
+    @apply transition-all duration-200 active:scale-95;
+  }
+
+  /* Gradients */
+  .bg-gradient-soft {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary) / 0.5) 100%);
+  }
+
+  .dark .bg-gradient-soft {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--accent) / 0.3) 100%);
+  }
+
+  .bg-gradient-primary-soft {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.05) 100%);
+  }
+
+  /* Glowing Elements */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.15);
+  }
+
+  .dark .glow-primary {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.1);
+  }
+}
