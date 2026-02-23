@@ -1,14 +1,6 @@
 import { create } from 'zustand';
 import { Tenant, BillRecord } from './types';
-import {
-    getTenants as getLocalTenants,
-    getBills as getLocalBills,
-    saveTenants as saveLocalTenants,
-    saveBills as saveLocalBills
-} from './store';
-
-// This simulates network latency like querying Supabase
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { supabase } from '../utils/supabaseClient';
 
 interface AppState {
     tenants: Tenant[];
@@ -34,11 +26,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     fetchData: async () => {
         set({ isLoading: true, error: null });
         try {
-            // In the future: const { data } = await supabase.from('tenants').select('*');
-            await delay(600);
-            const tenants = getLocalTenants();
-            const bills = getLocalBills();
-            set({ tenants, bills, isLoading: false });
+            const [tenantsRes, billsRes] = await Promise.all([
+                supabase.from('tenants').select('*'),
+                supabase.from('bills').select('*')
+            ]);
+
+            if (tenantsRes.error) throw tenantsRes.error;
+            if (billsRes.error) throw billsRes.error;
+
+            set({ tenants: tenantsRes.data || [], bills: billsRes.data || [], isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
         }
@@ -47,11 +43,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     addTenant: async (tenant) => {
         set({ isLoading: true, error: null });
         try {
-            await delay(400);
+            const { error } = await supabase.from('tenants').insert([tenant]);
+            if (error) throw error;
+
             const currentTenants = get().tenants;
-            const newTenants = [...currentTenants, tenant];
-            saveLocalTenants(newTenants); // Persist
-            set({ tenants: newTenants, isLoading: false });
+            set({ tenants: [...currentTenants, tenant], isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
         }
@@ -60,12 +56,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     updateTenant: async (updatedTenant) => {
         set({ isLoading: true, error: null });
         try {
-            await delay(400);
+            const { error } = await supabase
+                .from('tenants')
+                .update(updatedTenant)
+                .eq('id', updatedTenant.id);
+
+            if (error) throw error;
+
             const currentTenants = get().tenants;
             const newTenants = currentTenants.map(t =>
                 t.id === updatedTenant.id ? updatedTenant : t
             );
-            saveLocalTenants(newTenants);
             set({ tenants: newTenants, isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
@@ -75,11 +76,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     removeTenant: async (id) => {
         set({ isLoading: true, error: null });
         try {
-            await delay(400);
+            // Because of ON DELETE CASCADE in SQL, deleting the tenant also deletes bills.
+            const { error } = await supabase.from('tenants').delete().eq('id', id);
+
+            if (error) throw error;
+
             const newTenants = get().tenants.filter(t => t.id !== id);
             const newBills = get().bills.filter(b => b.tenantId !== id);
-            saveLocalTenants(newTenants);
-            saveLocalBills(newBills);
             set({ tenants: newTenants, bills: newBills, isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
@@ -88,39 +91,41 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     toggleBillPaid: async (billId) => {
         try {
-            // Optimistic update
             const currentBills = get().bills;
-            const newBills = currentBills.map(b => {
-                if (b.id === billId) {
-                    const newVal = !b.isPaid;
-                    return {
-                        ...b,
-                        isPaid: newVal,
-                        paidDate: newVal ? new Date().toISOString().split('T')[0] : undefined
-                    };
-                }
-                return b;
-            });
+            const billToUpdate = currentBills.find(b => b.id === billId);
+            if (!billToUpdate) return;
 
+            const newVal = !billToUpdate.isPaid;
+            const paidDate = newVal ? new Date().toISOString().split('T')[0] : null;
+
+            // Optimistic UI Update
+            const newBills = currentBills.map(b =>
+                b.id === billId ? { ...b, isPaid: newVal, paidDate: paidDate || undefined } : b
+            );
             set({ bills: newBills });
-            // In the future, this is where the supabase update query goes
-            await delay(300);
-            saveLocalBills(newBills);
+
+            // Supabase API Call
+            const { error } = await supabase
+                .from('bills')
+                .update({ isPaid: newVal, paidDate: paidDate })
+                .eq('id', billId);
+
+            if (error) throw error;
+
         } catch (err: any) {
             set({ error: err.message });
-            // Revert optimistic update on failure by re-fetching
-            get().fetchData();
+            get().fetchData(); // Rollback on fail
         }
     },
 
     addBill: async (bill) => {
         set({ isLoading: true, error: null });
         try {
-            await delay(400); // simulate network
+            const { error } = await supabase.from('bills').insert([bill]);
+            if (error) throw error;
+
             const currentBills = get().bills;
-            const newBills = [...currentBills, bill];
-            saveLocalBills(newBills);
-            set({ bills: newBills, isLoading: false });
+            set({ bills: [...currentBills, bill], isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
         }
