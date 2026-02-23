@@ -61,7 +61,10 @@ export const useAppStore = create<AppState>((set, get) => ({
                 .update(updatedTenant)
                 .eq('id', updatedTenant.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase Update Error (Check if 'email' column exists):", error);
+                throw error;
+            }
 
             const currentTenants = get().tenants;
             const newTenants = currentTenants.map(t =>
@@ -70,6 +73,8 @@ export const useAppStore = create<AppState>((set, get) => ({
             set({ tenants: newTenants, isLoading: false });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
+            // Let the user see the exact error
+            alert("Database Error: " + err.message + "\n\nIf it mentions 'email', you need to run the SQL command in Supabase.");
         }
     },
 
