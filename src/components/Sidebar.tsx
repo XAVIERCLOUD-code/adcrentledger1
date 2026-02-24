@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, FileCheck2, CalendarDays, LogOut, User, Users } from "lucide-react";
 import { getRequirements, getCurrentUser, logout } from "@/data/store";
+import { ModeToggle } from "./ModeToggle";
+import { NotificationBell } from "./NotificationBell";
 
 interface SidebarContentProps {
     onNavigate?: () => void;
@@ -79,15 +81,20 @@ export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
             </nav>
 
             <div className="p-4 space-y-4 border-t border-border/50 bg-muted/10 shrink-0">
-                {/* User Info */}
-                <div className="group flex items-center gap-3 rounded-xl border border-border/50 bg-muted/30 p-3 shadow-inner hover:bg-muted/50 transition-colors">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background border border-border shrink-0">
-                        <User className="h-4 w-4 text-primary" />
+                {/* User Info & Toggles */}
+                <div className="flex items-center gap-2">
+                    <div className="group flex flex-1 items-center gap-3 rounded-xl border border-border/50 bg-muted/30 p-2 shadow-inner hover:bg-muted/50 transition-colors">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background border border-border shrink-0">
+                            <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <p className="text-sm font-semibold truncate text-foreground">{user?.name || "User"}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{user?.role || "Guest"}</p>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-semibold truncate text-foreground">{user?.name || "User"}</p>
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{user?.role || "Guest"}</p>
-                    </div>
+
+                    <NotificationBell onNavigate={onNavigate} />
+                    <ModeToggle />
                 </div>
 
                 <button

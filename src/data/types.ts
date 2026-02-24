@@ -62,6 +62,7 @@ export interface BuildingRequirement {
   expiryDate: string;
   status: "Active" | "Expiring Soon" | "Expired" | "Inactive";
   activationDate?: string;
+  documentUrl?: string; // Supabase Storage public URL
 }
 
 export interface MonthlyCollection {

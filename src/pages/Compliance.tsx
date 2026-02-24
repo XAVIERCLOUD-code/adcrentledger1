@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { getRequirements, updateRequirement, toggleRequirementStatus, getCurrentUser } from "@/data/store";
 import ComplianceWidget from "@/components/ComplianceWidget";
-// import { PlusCircle } from "lucide-react"; // Unused for now
+import { RenewComplianceModal } from "@/components/RenewComplianceModal";
+import { BuildingRequirement } from "@/data/types";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/utils/supabaseClient";
+import { toast } from "sonner";
 
 const Compliance = () => {
     useEffect(() => {
@@ -10,25 +13,48 @@ const Compliance = () => {
     }, []);
     // In a real app, we might want state to refresh when items are added/edited
     const [requirements, setRequirements] = useState(getRequirements());
+    const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
+    const [selectedRequirement, setSelectedRequirement] = useState<BuildingRequirement | null>(null);
 
-    const handleRenew = (id: string, validityYears: number) => {
+    const handleRenewClick = (id: string, validityYears: number) => {
+        const req = requirements.find(r => r.id === id);
+        if (req) {
+            setSelectedRequirement(req);
+            setIsRenewModalOpen(true);
+        }
+    };
+
+    const handleConfirmRenew = (updatedReq: BuildingRequirement) => {
+        updateRequirement(updatedReq);
+        setRequirements(getRequirements()); // Refresh list
+        setIsRenewModalOpen(false);
+        setSelectedRequirement(null);
+    };
+
+    const handleRemoveDocument = async (id: string, url: string) => {
         const req = requirements.find(r => r.id === id);
         if (!req) return;
 
-        const today = new Date();
-        const nextExpiry = new Date(today);
-        nextExpiry.setFullYear(today.getFullYear() + validityYears);
+        try {
+            const urlParts = url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+
+            if (fileName) {
+                await supabase.storage
+                    .from('compliance_documents')
+                    .remove([`compliance-docs/${fileName}`]);
+            }
+        } catch (err) {
+            console.error("Failed to delete from storage:", err);
+        }
 
         const updatedReq = {
             ...req,
-            issuedDate: today.toISOString().split("T")[0],
-            expiryDate: nextExpiry.toISOString().split("T")[0],
-            status: "Active" as const,
-            activationDate: today.toISOString().split("T")[0] // Also set activation date on renew
+            documentUrl: undefined
         };
-
         updateRequirement(updatedReq);
-        setRequirements(getRequirements()); // Refresh list
+        setRequirements(getRequirements());
+        toast.info("Document removed successfully.");
     };
 
     const handleToggle = (id: string) => {
@@ -54,10 +80,18 @@ const Compliance = () => {
             <div className="grid gap-6">
                 <ComplianceWidget
                     requirements={requirements}
-                    onRenew={isViewer ? undefined : handleRenew}
+                    onRenew={isViewer ? undefined : handleRenewClick}
                     onToggle={isViewer ? undefined : handleToggle}
+                    onRemoveDocument={isViewer ? undefined : handleRemoveDocument}
                 />
             </div>
+
+            <RenewComplianceModal
+                requirement={selectedRequirement}
+                isOpen={isRenewModalOpen}
+                onClose={() => setIsRenewModalOpen(false)}
+                onRenew={handleConfirmRenew}
+            />
         </div>
     );
 };

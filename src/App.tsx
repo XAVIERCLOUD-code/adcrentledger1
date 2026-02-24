@@ -14,10 +14,10 @@ import { useEffect } from "react";
 import { checkAndGenerateMonthlyBills, getCurrentUser } from "@/data/store";
 
 import CalendarEvents from "./pages/Calendar";
+import { ThemeProvider } from "@/components/theme-provider";
+import IdleTimer from "./components/IdleTimer";
 
 const queryClient = new QueryClient();
-
-import IdleTimer from "./components/IdleTimer";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = getCurrentUser();
@@ -37,31 +37,33 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-            <Route element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/compliance" element={<Compliance />} />
-              <Route path="/staff" element={<Staff />} />
-              <Route path="/calendar" element={<CalendarEvents />} />
-            </Route>
+              <Route element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/compliance" element={<Compliance />} />
+                <Route path="/staff" element={<Staff />} />
+                <Route path="/calendar" element={<CalendarEvents />} />
+              </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

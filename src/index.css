@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 45 30% 98%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -15,24 +15,29 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    /* Golden Yellow */
+    --primary: 45 93% 55%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
+    /* Olive Green as secondary */
+    --secondary: 75 40% 94%;
+    --secondary-foreground: 75 50% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 45 20% 94%;
+    --muted-foreground: 45 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11.2%;
+    --accent: 45 40% 94%;
+    --accent-foreground: 45 90% 30%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Deep Red */
+    --destructive: 0 74% 42%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --border: 45 20% 90%;
+    --input: 45 20% 90%;
+
+    /* Golden Yellow for Rings */
+    --ring: 45 93% 55%;
 
     --radius: 0.75rem;
 
@@ -45,51 +50,59 @@
     --unpaid-foreground: 0 85% 97%;
     --unpaid-glow: 0 84% 60% / 0.2;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
+    --warning: 45 93% 55%;
+    /* Golden Yellow */
+    --warning-foreground: 48 96% 15%;
 
-    --chart-1: 221 83% 53%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 262 83% 58%;
-    --chart-5: 0 84% 60%;
+    /* Updated Chart Colors mapped to Logo */
+    --chart-1: 45 93% 55%;
+    /* Golden Yellow */
+    --chart-2: 75 50% 45%;
+    /* Olive Green */
+    --chart-3: 20 90% 55%;
+    /* Burnt Orange */
+    --chart-4: 0 74% 42%;
+    /* Deep Red */
+    --chart-5: 45 60% 70%;
+    /* Soft Yellow */
   }
 
   /* PREMIUM DARK TECH THEME */
   .dark {
-    /* Very deep, rich charcoal almost black */
+    /* Very deep charcoal / Almost Black */
     --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    --foreground: 45 20% 90%;
+    /* Soft yellowish white */
 
-    /* Slightly lighter than background, very subtle blue tint */
     --card: 224 71% 6%;
-    --card-foreground: 210 40% 98%;
+    --card-foreground: 45 20% 95%;
 
     --popover: 224 71% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover-foreground: 45 20% 95%;
 
-    /* More vibrant electric blue for primary */
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47.4% 11.2%;
+    /* Vibrant Golden Yellow */
+    --primary: 48 96% 53%;
+    --primary-foreground: 224 71% 4%;
 
-    /* Deeper secondary elements to fade into background */
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 210 40% 98%;
+    /* Olive Green Tinted Secondary */
+    --secondary: 75 30% 15%;
+    --secondary-foreground: 75 40% 80%;
 
-    --muted: 222 47% 11%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 45 10% 15%;
+    --muted-foreground: 45 10% 65%;
 
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    /* Burnt Orange Accent */
+    --accent: 20 50% 20%;
+    --accent-foreground: 20 90% 70%;
 
-    /* Vibrant, glowing reds */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    /* Deep Vibrant Red */
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Subtle borders */
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 217 91% 60%;
+    --border: 45 10% 15%;
+    --input: 45 10% 15%;
+    --ring: 48 96% 53%;
   }
 }
 

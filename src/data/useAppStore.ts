@@ -20,11 +20,16 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
     tenants: [],
     bills: [],
-    isLoading: false,
+    isLoading: true, // Start as true to show skeletons immediately on app load
     error: null,
 
     fetchData: async () => {
-        set({ isLoading: true, error: null });
+        // Only show hard loading state if we have no data yet (prevents skeleton flashing on navigation)
+        const isInitialLoad = get().tenants.length === 0;
+        if (isInitialLoad) {
+            set({ isLoading: true, error: null });
+        }
+
         try {
             const [tenantsRes, billsRes] = await Promise.all([
                 supabase.from('tenants').select('*'),
@@ -33,8 +38,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
             if (tenantsRes.error) throw tenantsRes.error;
             if (billsRes.error) throw billsRes.error;
-
-            console.log("Supabase Fetch - First Tenant Structure:", tenantsRes.data?.[0]);
 
             set({ tenants: tenantsRes.data || [], bills: billsRes.data || [], isLoading: false });
         } catch (err: any) {
