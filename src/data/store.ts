@@ -1,4 +1,4 @@
-import { Tenant, BillRecord, BuildingRequirement, CalendarEvent, User, UserRole, Staff } from "./types";
+import { Tenant, BillRecord, BuildingRequirement, CalendarEvent, User, UserRole, Staff, CashTransaction, FinanceTotals } from "./types";
 
 const TENANTS_KEY = "adc_tenants_v5";
 const BILLS_KEY = "adc_bills_v5";
@@ -169,7 +169,7 @@ const defaultTenants: Tenant[] = [
   }
 ];
 
-const REMINDERS_KEY = "adc_reminders";
+const REMINDERS_KEY = "adc_reminders_v2";
 
 const defaultRequirements: BuildingRequirement[] = [
   {
@@ -188,6 +188,22 @@ const defaultRequirements: BuildingRequirement[] = [
     expiryDate: "2026-01-10",
     status: "Active",
   },
+  {
+    id: "r3",
+    name: "Wastewater Discharge Permit",
+    issuedDate: "2025-04-14",
+    validityYears: 1,
+    expiryDate: "2026-04-14",
+    status: "Active",
+  },
+  {
+    id: "r4",
+    name: "Hazardous Waste Generator Registration",
+    issuedDate: "2025-06-12",
+    validityYears: 5,
+    expiryDate: "2030-06-12",
+    status: "Active",
+  }
 ];
 
 export function getRequirements(): BuildingRequirement[] {
@@ -558,4 +574,45 @@ export function deleteEvent(eventId: string) {
   const userEvents: CalendarEvent[] = JSON.parse(stored);
   const filtered = userEvents.filter(e => e.id !== eventId);
   localStorage.setItem(EVENTS_KEY, JSON.stringify(filtered));
+}
+
+// --- Cash Flow (Finance Module) ---
+
+const FINANCE_TOTALS_KEY = "adc_finance_totals";
+const CASH_TRANSACTIONS_KEY = "adc_cash_transactions";
+
+export function getCashTransactions(): CashTransaction[] {
+  const stored = localStorage.getItem(CASH_TRANSACTIONS_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function saveCashTransactions(transactions: CashTransaction[]) {
+  localStorage.setItem(CASH_TRANSACTIONS_KEY, JSON.stringify(transactions));
+}
+
+export function addCashTransaction(transaction: CashTransaction) {
+  const transactions = getCashTransactions();
+  transactions.push(transaction);
+  saveCashTransactions(transactions);
+}
+
+export function deleteCashTransaction(transactionId: string) {
+  const transactions = getCashTransactions().filter(t => t.id !== transactionId);
+  saveCashTransactions(transactions);
+}
+
+export function getFinanceTotals(): FinanceTotals {
+  const stored = localStorage.getItem(FINANCE_TOTALS_KEY);
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  return {
+    cashInBank: 0,
+    totalReceipts: 0,
+    totalDisbursements: 0
+  };
+}
+
+export function saveFinanceTotals(totals: FinanceTotals) {
+  localStorage.setItem(FINANCE_TOTALS_KEY, JSON.stringify(totals));
 }

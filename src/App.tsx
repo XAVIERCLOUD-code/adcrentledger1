@@ -9,6 +9,7 @@ import Staff from "./pages/Staff";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Finance from "./pages/Finance";
 
 import { useEffect } from "react";
 import { checkAndGenerateMonthlyBills, getCurrentUser } from "@/data/store";
@@ -55,6 +56,7 @@ const App = () => {
                 <Route path="/compliance" element={<Compliance />} />
                 <Route path="/staff" element={<Staff />} />
                 <Route path="/calendar" element={<CalendarEvents />} />
+                <Route path="/finance" element={<Finance />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

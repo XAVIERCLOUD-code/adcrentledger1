@@ -92,3 +92,19 @@ export interface Staff {
   email?: string;
   phone?: string;
 }
+
+export interface CashTransaction {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: 'receipt' | 'disbursement';
+  amount: number;
+  category: string;
+  description: string;
+  referenceNo?: string;
+}
+
+export interface FinanceTotals {
+  cashInBank: number;
+  totalReceipts: number;
+  totalDisbursements: number;
+}

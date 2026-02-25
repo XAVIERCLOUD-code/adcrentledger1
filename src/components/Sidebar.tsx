@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileCheck2, CalendarDays, LogOut, User, Users } from "lucide-react";
+import { LayoutDashboard, FileCheck2, CalendarDays, LogOut, User, Users, Wallet } from "lucide-react";
 import { getRequirements, getCurrentUser, logout } from "@/data/store";
 import { ModeToggle } from "./ModeToggle";
 import { NotificationBell } from "./NotificationBell";
@@ -40,6 +40,11 @@ export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
             name: "Calendar",
             href: "/calendar",
             icon: CalendarDays,
+        },
+        {
+            name: "Finance",
+            href: "/finance",
+            icon: Wallet,
         },
     ];
 
