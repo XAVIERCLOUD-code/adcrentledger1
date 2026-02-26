@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { logout } from "@/data/store";
 import { toast } from "sonner";
+import { useAppStore } from "@/data/useAppStore";
 
 // 15 minutes in milliseconds
 const IDLE_TIMEOUT = 15 * 60 * 1000;
 
 const IdleTimer = ({ children }: { children: React.ReactNode }) => {
+    const { logout } = useAppStore();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const resetTimer = () => {
@@ -19,10 +20,13 @@ const IdleTimer = ({ children }: { children: React.ReactNode }) => {
     };
 
     const handleIdle = () => {
-        logout();
         toast.warning("Session Expired", {
             description: "You have been logged out due to inactivity.",
         });
+
+        setTimeout(() => {
+            logout();
+        }, 1500);
     };
 
     useEffect(() => {

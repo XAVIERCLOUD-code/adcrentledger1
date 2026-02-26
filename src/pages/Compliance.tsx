@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getRequirements, updateRequirement, toggleRequirementStatus, getCurrentUser } from "@/data/store";
+import { useAppStore } from "@/data/useAppStore";
 import ComplianceWidget from "@/components/ComplianceWidget";
 import { RenewComplianceModal } from "@/components/RenewComplianceModal";
 import { BuildingRequirement } from "@/data/types";
@@ -8,11 +8,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { toast } from "sonner";
 
 const Compliance = () => {
-    useEffect(() => {
-        console.log("Compliance component mounted");
-    }, []);
-    // In a real app, we might want state to refresh when items are added/edited
-    const [requirements, setRequirements] = useState(getRequirements());
+    const { requirements, updateRequirement, toggleRequirementStatus, user } = useAppStore();
     const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
     const [selectedRequirement, setSelectedRequirement] = useState<BuildingRequirement | null>(null);
 
@@ -24,9 +20,8 @@ const Compliance = () => {
         }
     };
 
-    const handleConfirmRenew = (updatedReq: BuildingRequirement) => {
-        updateRequirement(updatedReq);
-        setRequirements(getRequirements()); // Refresh list
+    const handleConfirmRenew = async (updatedReq: BuildingRequirement) => {
+        await updateRequirement(updatedReq);
         setIsRenewModalOpen(false);
         setSelectedRequirement(null);
     };
@@ -52,18 +47,15 @@ const Compliance = () => {
             ...req,
             documentUrl: undefined
         };
-        updateRequirement(updatedReq);
-        setRequirements(getRequirements());
+        await updateRequirement(updatedReq);
         toast.info("Document removed successfully.");
     };
 
-    const handleToggle = (id: string) => {
+    const handleToggle = async (id: string) => {
         console.log("Toggling ID:", id);
-        toggleRequirementStatus(id);
-        setRequirements(getRequirements());
+        await toggleRequirementStatus(id);
     };
 
-    const user = getCurrentUser();
     const isViewer = user?.role === 'viewer';
 
     return (

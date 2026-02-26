@@ -12,7 +12,7 @@ import Login from "./pages/Login";
 import Finance from "./pages/Finance";
 
 import { useEffect } from "react";
-import { checkAndGenerateMonthlyBills, getCurrentUser } from "@/data/store";
+import { useAppStore } from "@/data/useAppStore";
 
 import CalendarEvents from "./pages/Calendar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -21,7 +21,7 @@ import IdleTimer from "./components/IdleTimer";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const user = getCurrentUser();
+  const { user } = useAppStore();
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -33,9 +33,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  const { checkAndGenerateMonthlyBills } = useAppStore();
+
   useEffect(() => {
     checkAndGenerateMonthlyBills();
-  }, []);
+  }, [checkAndGenerateMonthlyBills]);
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">

@@ -1,13 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { getTenants, getBills, removeTenant, getCurrentUser } from "@/data/store";
+import { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "@/data/useAppStore";
-import { Tenant, BillRecord } from "@/data/types";
+import { Tenant } from "@/data/types";
 import TenantCard from "./TenantCard";
 import TenantProfile from "./TenantProfile";
 import SummaryChart from "./SummaryChart";
 import DashboardMetrics from "./DashboardMetrics";
 import DashboardFilters from "./DashboardFilters";
-import { getRequirements } from "@/data/store";
 import AddTenantForm from "./AddTenantForm";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,10 +19,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, Download, Users, Banknote, AlertTriangle, UserPlus, Trash2, ArrowUpRight, Filter, Loader2, CalendarClock } from "lucide-react";
+import { Building2, Download, Users, AlertTriangle, UserPlus, Trash2, ArrowUpRight, CalendarClock } from "lucide-react";
 import { exportToCSV } from "@/utils/export";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/utils/supabaseClient";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Select,
@@ -38,7 +35,7 @@ const floorOptions = [0, 1, 2, 3] as const;
 const floorLabels: Record<number, string> = { 0: "All Floors", 1: "1st Floor", 2: "2nd Floor", 3: "3rd Floor" };
 
 const Dashboard = () => {
-  const { tenants, bills, isLoading, fetchData, removeTenant: storeRemoveTenant } = useAppStore();
+  const { tenants, bills, requirements, isLoading, fetchData, removeTenant: storeRemoveTenant, user } = useAppStore();
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [floorFilter, setFloorFilter] = useState<number>(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -54,7 +51,6 @@ const Dashboard = () => {
     fetchData();
   }, [fetchData]);
 
-  const user = getCurrentUser();
   const isViewer = user?.role === 'viewer';
 
 
@@ -168,7 +164,7 @@ const Dashboard = () => {
 
       {/* Compliance Alert */}
       {(() => {
-        const expiringReqs = getRequirements().filter(
+        const expiringReqs = requirements.filter(
           (r) => r.status === "Expiring Soon" || r.status === "Expired"
         );
 
@@ -262,6 +258,7 @@ const Dashboard = () => {
         );
       })()}
 
+      {/* Metrics */}
       <DashboardMetrics
         stats={stats}
         isViewer={isViewer}

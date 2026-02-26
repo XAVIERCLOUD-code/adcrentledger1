@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, User, Briefcase, Users, Mail, Phone, CalendarDays, Edit2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStaff, updateStaff, getCurrentUser } from "@/data/store";
+import { useAppStore } from "@/data/useAppStore";
 import { Staff as StaffType } from "@/data/types";
 
 // Helper to map string icon names back to Lucide components
@@ -14,16 +14,11 @@ const getIcon = (iconName: string) => {
 };
 
 const Staff = () => {
-    const [staffList, setStaffList] = useState<StaffType[]>([]);
+    const { staff: staffList, updateStaff, user } = useAppStore();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<StaffType | null>(null);
 
-    const currentUser = getCurrentUser();
-    const isAdmin = currentUser?.role === 'admin';
-
-    useEffect(() => {
-        setStaffList(getStaff());
-    }, []);
+    const isAdmin = user?.role === 'admin';
 
     const handleEditClick = (staff: StaffType) => {
         setEditData({ ...staff });
@@ -35,10 +30,9 @@ const Staff = () => {
         setEditData(null);
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (editData) {
-            updateStaff(editData);
-            setStaffList(getStaff()); // Refresh UI
+            await updateStaff(editData);
             setEditingId(null);
             setEditData(null);
         }

@@ -1,5 +1,20 @@
 import { useState } from "react";
-import { login } from "@/data/store";
+// Temporarily mock login here since auth isn't fully set up with Supabase yet.
+const mockLogin = (user: string, pass: string) => {
+    if (user === 'admin' && pass === 'admin123') {
+        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '1', name: 'Admin User', role: 'admin' }));
+        localStorage.setItem('adc_auth_token_v2', 'mock-jwt-token-admin');
+        window.dispatchEvent(new Event('storage'));
+        return true;
+    }
+    if (user === 'viewer' && pass === 'viewer123') {
+        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '2', name: 'Viewer User', role: 'viewer' }));
+        localStorage.setItem('adc_auth_token_v2', 'mock-jwt-token-viewer');
+        window.dispatchEvent(new Event('storage'));
+        return true;
+    }
+    return false;
+};
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -15,7 +30,7 @@ const Login = () => {
         setIsLoading(true);
 
         setTimeout(() => {
-            if (login(username, password)) {
+            if (mockLogin(username, password)) {
                 toast.success("Welcome back!", { duration: 2000 });
                 window.location.href = "/";
             } else {

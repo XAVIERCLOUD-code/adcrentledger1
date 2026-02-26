@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarEvent, } from "@/data/types";
-import { getEvents, addEvent, deleteEvent, getCurrentUser } from "@/data/store";
+import { useAppStore } from "@/data/useAppStore";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const Calendar = () => {
     const { toast } = useToast();
+    const { events, addEvent, deleteEvent, user } = useAppStore();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showAddDialog, setShowAddDialog] = useState(false);
     const [showEventDialog, setShowEventDialog] = useState(false);
@@ -26,15 +26,6 @@ const Calendar = () => {
     const [newEventDesc, setNewEventDesc] = useState("");
     const [eventType, setEventType] = useState<CalendarEvent["type"]>("meeting");
     const [eventTime, setEventTime] = useState("09:00");
-
-    useEffect(() => {
-        // Load events
-        setEvents(getEvents());
-    }, [currentDate]); // Reload on month change to ensure holidays update if year changes
-
-    const refreshEvents = () => {
-        setEvents(getEvents());
-    };
 
     const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
     const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -49,7 +40,6 @@ const Calendar = () => {
 
     const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    const user = getCurrentUser();
     const isViewer = user?.role === 'viewer';
 
     // ... existing code ...
@@ -70,7 +60,7 @@ const Calendar = () => {
         setShowEventDialog(true);
     };
 
-    const handleSaveEvent = () => {
+    const handleSaveEvent = async () => {
         if (!newEventTitle || !selectedDate) {
             toast({ title: "Title Required", variant: "destructive" });
             return;
@@ -84,16 +74,14 @@ const Calendar = () => {
             description: newEventDesc + (eventTime ? ` @ ${eventTime}` : "")
         };
 
-        addEvent(newEvent);
-        refreshEvents();
+        await addEvent(newEvent);
         setShowAddDialog(false);
         toast({ title: "Event Added", description: `${newEventTitle} on ${format(selectedDate, "MMM d")}` });
     };
 
-    const handleDeleteEvent = () => {
+    const handleDeleteEvent = async () => {
         if (!selectedEvent) return;
-        deleteEvent(selectedEvent.id);
-        refreshEvents();
+        await deleteEvent(selectedEvent.id);
         setShowEventDialog(false);
         toast({ title: "Event Deleted" });
     };

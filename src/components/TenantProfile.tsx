@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Tenant, BillRecord } from "@/data/types";
 import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter } from "lucide-react";
-import { getCurrentUser } from "@/data/store";
 import { useAppStore } from "@/data/useAppStore";
 import StatusBadge, { BillTypeIndicators } from "./StatusBadge";
 import BillingForm from "./BillingForm";
@@ -26,7 +25,7 @@ interface TenantProfileProps {
 }
 
 const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
-  const { bills, updateTenant, toggleBillPaid, fetchData } = useAppStore();
+  const { bills, user, updateTenant, toggleBillPaid, fetchData } = useAppStore();
 
   // Filter bills just for this tenant
   const tenantBills = useMemo(() =>
@@ -54,7 +53,6 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   // Year Filter State
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
-  const user = getCurrentUser();
   const isViewer = user?.role === 'viewer';
 
   const handleSaveContact = async () => {

@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, FileCheck2, CalendarDays, LogOut, User, Users, Wallet } from "lucide-react";
-import { getRequirements, getCurrentUser, logout } from "@/data/store";
 import { ModeToggle } from "./ModeToggle";
 import { NotificationBell } from "./NotificationBell";
+import { useAppStore } from "@/data/useAppStore";
 
 interface SidebarContentProps {
     onNavigate?: () => void;
@@ -11,8 +11,11 @@ interface SidebarContentProps {
 
 export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
     const location = useLocation();
-    const requirements = getRequirements();
-    const user = getCurrentUser();
+    const { requirements, user, logout } = useAppStore();
+
+    const handleLogout = () => {
+        logout();
+    };
 
     // Calculate if there are any urgent requirements (Expiring Soon or Expired)
     const notificationCount = requirements.filter(
@@ -103,7 +106,7 @@ export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
                 </div>
 
                 <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20 border border-transparent"
                 >
                     <LogOut className="h-3.5 w-3.5" />

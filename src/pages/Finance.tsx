@@ -26,31 +26,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CashTransaction, FinanceTotals } from "@/data/types";
-import {
-    getCashTransactions,
-    addCashTransaction,
-    deleteCashTransaction,
-    getFinanceTotals,
-    saveFinanceTotals,
-    getCurrentUser
-} from "@/data/store";
+import { CashTransaction } from "@/data/types";
+import { useAppStore } from "@/data/useAppStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Finance() {
-    const currentUser = getCurrentUser();
-    const isAdmin = currentUser?.role === 'admin';
+    const { cashTransactions: transactions, financeTotals: totals, addCashTransaction, deleteCashTransaction, user } = useAppStore();
 
-    const [transactions, setTransactions] = useState<CashTransaction[]>([]);
-
-    // Manual Totals State
-    const [totals, setTotals] = useState<FinanceTotals>({ cashInBank: 0, totalReceipts: 0, totalDisbursements: 0 });
-    const [isEditTotalsModalOpen, setIsEditTotalsModalOpen] = useState(false);
-
-    // Edit Totals Inputs
-    const [editCashInBank, setEditCashInBank] = useState("");
-    const [editTotalReceipts, setEditTotalReceipts] = useState("");
-    const [editTotalDisbursements, setEditTotalDisbursements] = useState("");
+    const isAdmin = user?.role === 'admin';
 
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
     const [isDisbursementModalOpen, setIsDisbursementModalOpen] = useState(false);
@@ -61,40 +44,14 @@ export default function Finance() {
     const [description, setDescription] = useState("");
     const [referenceNo, setReferenceNo] = useState("");
 
-    const loadData = () => {
-        setTransactions(getCashTransactions().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        const currentTotals = getFinanceTotals();
-        setTotals(currentTotals);
-    };
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const openEditTotalsModal = () => {
-        setEditCashInBank(totals.cashInBank.toString());
-        setEditTotalReceipts(totals.totalReceipts.toString());
-        setEditTotalDisbursements(totals.totalDisbursements.toString());
-        setIsEditTotalsModalOpen(true);
-    };
-
-    const handleSaveTotals = () => {
-        const newTotals: FinanceTotals = {
-            cashInBank: parseFloat(editCashInBank) || 0,
-            totalReceipts: parseFloat(editTotalReceipts) || 0,
-            totalDisbursements: parseFloat(editTotalDisbursements) || 0,
-        };
-        saveFinanceTotals(newTotals);
-        setTotals(newTotals);
-        setIsEditTotalsModalOpen(false);
-    };
-
-    const handleAddTransaction = (type: "receipt" | "disbursement") => {
+    const handleAddTransaction = async (type: "receipt" | "disbursement") => {
         const val = parseFloat(amount);
         if (!val || !date || !category || !description) return;
 
-        addCashTransaction({
-            id: `cash-${Date.now()}`,
+        await addCashTransaction({
+            id: `cash-${Date.now()}`, // Will be overwritten by UUID in store, but good for typing if required
             date,
             type,
             amount: val,
@@ -112,14 +69,11 @@ export default function Finance() {
 
         if (type === "receipt") setIsReceiptModalOpen(false);
         if (type === "disbursement") setIsDisbursementModalOpen(false);
-
-        loadData();
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this transaction?")) {
-            deleteCashTransaction(id);
-            loadData();
+            await deleteCashTransaction(id);
         }
     };
 
@@ -134,9 +88,6 @@ export default function Finance() {
                 </div>
                 {isAdmin && (
                     <div className="flex gap-2">
-                        <Button onClick={openEditTotalsModal} variant="outline">
-                            Edit Totals
-                        </Button>
                         <Button onClick={() => setIsReceiptModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
                             <Plus className="mr-2 h-4 w-4" /> Add Receipt
                         </Button>
@@ -201,14 +152,14 @@ export default function Finance() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {transactions.length === 0 ? (
+                            {sortedTransactions.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
                                         No transactions found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                transactions.map((t) => (
+                                sortedTransactions.map((t) => (
                                     <TableRow key={t.id}>
                                         <TableCell>{formatDate(t.date)}</TableCell>
                                         <TableCell>
@@ -237,48 +188,6 @@ export default function Finance() {
 
             {isAdmin && (
                 <>
-                    {/* Edit Totals Modal */}
-                    <Dialog open={isEditTotalsModalOpen} onOpenChange={setIsEditTotalsModalOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Edit Dashboard Totals</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <p className="text-sm text-muted-foreground">
-                                    Manually override the top dashboard figures without affecting the ledger below.
-                                </p>
-                                <div className="space-y-2">
-                                    <Label>Cash in Bank (₱)</Label>
-                                    <Input
-                                        type="number"
-                                        value={editCashInBank}
-                                        onChange={(e) => setEditCashInBank(e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Total Receipts (₱)</Label>
-                                    <Input
-                                        type="number"
-                                        value={editTotalReceipts}
-                                        onChange={(e) => setEditTotalReceipts(e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Total Disbursements (₱)</Label>
-                                    <Input
-                                        type="number"
-                                        value={editTotalDisbursements}
-                                        onChange={(e) => setEditTotalDisbursements(e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <Button onClick={handleSaveTotals} className="w-full">Save Totals</Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-
                     {/* Receipt Modal */}
                     <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
                         <DialogContent>

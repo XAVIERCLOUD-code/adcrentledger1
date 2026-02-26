@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar, { SidebarContent } from "./Sidebar";
-import { useEffect, useState } from "react";
-import { getRequirements } from "@/data/store";
+import { useState, useEffect } from "react";
+import { useAppStore } from "@/data/useAppStore";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
@@ -9,13 +9,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const Layout = () => {
     const [open, setOpen] = useState(false);
-    const location = useLocation();
+    const { requirements } = useAppStore();
 
     useEffect(() => {
         // Check for expiring compliance items
         const timer = setTimeout(() => {
-            const reqs = getRequirements();
-            const expiring = reqs.filter(r => r.status === "Expiring Soon" || r.status === "Expired");
+            const expiring = requirements.filter(r => r.status === "Expiring Soon" || r.status === "Expired");
 
             if (expiring.length > 0) {
                 toast.warning("Compliance Alert", {
