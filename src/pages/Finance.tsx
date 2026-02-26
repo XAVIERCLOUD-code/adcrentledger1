@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Wallet, ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
+import { Plus, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,7 @@ import { useAppStore } from "@/data/useAppStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Finance() {
-    const { cashTransactions: transactions, financeTotals: totals, addCashTransaction, deleteCashTransaction, user } = useAppStore();
+    const { cashTransactions: transactions, financeTotals: totals, addCashTransaction, deleteCashTransaction, updateCashTransaction, user } = useAppStore();
 
     const isAdmin = user?.role === 'admin';
 
@@ -43,6 +43,7 @@ export default function Finance() {
     const [category, setCategory] = useState("");
     const [description, setDescription] = useState("");
     const [referenceNo, setReferenceNo] = useState("");
+    const [editingTransaction, setEditingTransaction] = useState<CashTransaction | null>(null);
 
     const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -69,6 +70,38 @@ export default function Finance() {
 
         if (type === "receipt") setIsReceiptModalOpen(false);
         if (type === "disbursement") setIsDisbursementModalOpen(false);
+    };
+
+    const handleEditClick = (t: CashTransaction) => {
+        setEditingTransaction(t);
+        setDate(t.date);
+        setAmount(t.amount.toString());
+        setCategory(t.category);
+        setDescription(t.description);
+        setReferenceNo(t.referenceNo || "");
+    };
+
+    const handleUpdateTransaction = async () => {
+        if (!editingTransaction) return;
+        const val = parseFloat(amount);
+        if (!val || !date || !category || !description) return;
+
+        await updateCashTransaction({
+            ...editingTransaction,
+            date,
+            amount: val,
+            category,
+            description,
+            referenceNo
+        });
+
+        setEditingTransaction(null);
+        // Reset form
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setReferenceNo("");
+        setDate(new Date().toISOString().split("T")[0]);
     };
 
     const handleDelete = async (id: string) => {
@@ -173,7 +206,10 @@ export default function Finance() {
                                         <TableCell className={`text-right font-medium ${t.type === 'receipt' ? 'text-emerald-500' : 'text-destructive'}`}>
                                             {t.type === 'receipt' ? '+' : '-'}{formatCurrency(t.amount)}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(t)}>
+                                                <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                            </Button>
                                             <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
                                                 <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                                             </Button>
@@ -273,6 +309,55 @@ export default function Finance() {
                                     <Input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} placeholder="Optional" />
                                 </div>
                                 <Button onClick={() => handleAddTransaction("disbursement")} className="w-full" variant="destructive">Save Disbursement</Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Edit Modal */}
+                    <Dialog open={!!editingTransaction} onOpenChange={(open) => !open && setEditingTransaction(null)}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit {editingTransaction?.type === 'receipt' ? 'Receipt' : 'Disbursement'}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Date</Label>
+                                        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Amount (₱)</Label>
+                                        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Category</Label>
+                                    <Select value={category} onValueChange={setCategory}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select category..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Rent Payment">Rent Payment</SelectItem>
+                                            <SelectItem value="Security Deposit">Security Deposit</SelectItem>
+                                            <SelectItem value="Utility Payment">Utility Payment</SelectItem>
+                                            <SelectItem value="Other Income">Other Income</SelectItem>
+                                            <SelectItem value="Payroll">Payroll</SelectItem>
+                                            <SelectItem value="Utilities (Meralco/Water)">Utilities (Meralco/Water)</SelectItem>
+                                            <SelectItem value="Maintenance & Repairs">Maintenance & Repairs</SelectItem>
+                                            <SelectItem value="Taxes & Permits">Taxes & Permits</SelectItem>
+                                            <SelectItem value="Other Expense">Other Expense</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Description</Label>
+                                    <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Reference No. / OR No.</Label>
+                                    <Input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} placeholder="Optional" />
+                                </div>
+                                <Button onClick={handleUpdateTransaction} className="w-full">Update Transaction</Button>
                             </div>
                         </DialogContent>
                     </Dialog>

@@ -49,6 +49,7 @@ interface AppState {
 
     // Cash Transactions
     addCashTransaction: (transaction: CashTransaction) => Promise<void>;
+    updateCashTransaction: (transaction: CashTransaction) => Promise<void>;
     deleteCashTransaction: (id: string) => Promise<void>;
 }
 
@@ -415,6 +416,23 @@ export const useAppStore = create<AppState>((set, get) => ({
             if (error) throw error;
 
             const newTransactions = [...get().cashTransactions, data as CashTransaction];
+            set({
+                cashTransactions: newTransactions,
+                financeTotals: calculateFinanceTotals(newTransactions),
+                isLoading: false
+            });
+        } catch (err: any) {
+            set({ error: err.message, isLoading: false });
+        }
+    },
+
+    updateCashTransaction: async (transaction) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { error } = await supabase.from('cash_transactions').update(transaction).eq('id', transaction.id);
+            if (error) throw error;
+
+            const newTransactions = get().cashTransactions.map(t => t.id === transaction.id ? transaction : t);
             set({
                 cashTransactions: newTransactions,
                 financeTotals: calculateFinanceTotals(newTransactions),
