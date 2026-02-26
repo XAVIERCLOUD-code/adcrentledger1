@@ -31,7 +31,7 @@ import { useAppStore } from "@/data/useAppStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Finance() {
-    const { cashTransactions: transactions, financeTotals: totals, addCashTransaction, deleteCashTransaction, updateCashTransaction, user } = useAppStore();
+    const { cashTransactions: transactions, financeTotals: totals, financeTotalsOverride, addCashTransaction, deleteCashTransaction, updateCashTransaction, updateFinanceTotals, user } = useAppStore();
 
     const isAdmin = user?.role === 'admin';
 
@@ -44,6 +44,11 @@ export default function Finance() {
     const [description, setDescription] = useState("");
     const [referenceNo, setReferenceNo] = useState("");
     const [editingTransaction, setEditingTransaction] = useState<CashTransaction | null>(null);
+
+    const [isEditTotalsModalOpen, setIsEditTotalsModalOpen] = useState(false);
+    const [editCash, setEditCash] = useState("");
+    const [editReceipts, setEditReceipts] = useState("");
+    const [editDisbursements, setEditDisbursements] = useState("");
 
     const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -110,6 +115,22 @@ export default function Finance() {
         }
     };
 
+    const handleOpenEditTotals = () => {
+        setEditCash(totals.cashInBank.toString());
+        setEditReceipts(totals.totalReceipts.toString());
+        setEditDisbursements(totals.totalDisbursements.toString());
+        setIsEditTotalsModalOpen(true);
+    };
+
+    const handleSaveTotalsOverride = async () => {
+        setIsEditTotalsModalOpen(false);
+        await updateFinanceTotals({
+            cash_in_bank: parseFloat(editCash) || 0,
+            total_receipts: parseFloat(editReceipts) || 0,
+            total_disbursements: parseFloat(editDisbursements) || 0
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -132,7 +153,7 @@ export default function Finance() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <Card className="bg-card">
+                <Card className="bg-card group relative">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Cash in Bank</CardTitle>
                         <Wallet className="h-4 w-4 text-primary" />
@@ -140,11 +161,16 @@ export default function Finance() {
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(totals.cashInBank)}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Manual running balance
+                            Current available balance {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
+                    {isAdmin && (
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
+                            <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </Button>
+                    )}
                 </Card>
-                <Card>
+                <Card className="group relative">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Receipts</CardTitle>
                         <ArrowUpRight className="h-4 w-4 text-emerald-500" />
@@ -152,11 +178,16 @@ export default function Finance() {
                     <CardContent>
                         <div className="text-2xl font-bold text-emerald-500">{formatCurrency(totals.totalReceipts)}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            All time incoming
+                            All time incoming {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
+                    {isAdmin && (
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
+                            <Edit className="h-4 w-4 text-muted-foreground hover:text-emerald-500" />
+                        </Button>
+                    )}
                 </Card>
-                <Card>
+                <Card className="group relative">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Disbursements</CardTitle>
                         <ArrowDownRight className="h-4 w-4 text-destructive" />
@@ -164,9 +195,14 @@ export default function Finance() {
                     <CardContent>
                         <div className="text-2xl font-bold text-destructive">{formatCurrency(totals.totalDisbursements)}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            All time expenses
+                            All time expenses {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
+                    {isAdmin && (
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
+                            <Edit className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                    )}
                 </Card>
             </div>
 
@@ -358,6 +394,33 @@ export default function Finance() {
                                     <Input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} placeholder="Optional" />
                                 </div>
                                 <Button onClick={handleUpdateTransaction} className="w-full">Update Transaction</Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Edit Totals Modal */}
+                    <Dialog open={isEditTotalsModalOpen} onOpenChange={setIsEditTotalsModalOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Override Finance Totals</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Cash in Bank (₱)</Label>
+                                    <Input type="number" value={editCash} onChange={(e) => setEditCash(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Total Receipts (₱)</Label>
+                                    <Input type="number" value={editReceipts} onChange={(e) => setEditReceipts(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Total Disbursements (₱)</Label>
+                                    <Input type="number" value={editDisbursements} onChange={(e) => setEditDisbursements(e.target.value)} />
+                                </div>
+                                <div className="pt-2 flex gap-2 justify-end">
+                                    <Button variant="outline" onClick={() => setIsEditTotalsModalOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleSaveTotalsOverride}>Save Overrides</Button>
+                                </div>
                             </div>
                         </DialogContent>
                     </Dialog>

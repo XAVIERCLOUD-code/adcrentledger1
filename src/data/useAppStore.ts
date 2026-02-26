@@ -18,6 +18,7 @@ interface AppState {
 
     // Computed
     financeTotals: FinanceTotals;
+    financeTotalsOverride?: FinanceTotalsOverride;
 
     // Actions
     fetchData: () => Promise<void>;
@@ -51,9 +52,27 @@ interface AppState {
     addCashTransaction: (transaction: CashTransaction) => Promise<void>;
     updateCashTransaction: (transaction: CashTransaction) => Promise<void>;
     deleteCashTransaction: (id: string) => Promise<void>;
+
+    updateFinanceTotals: (totals: Partial<FinanceTotalsOverride>) => Promise<void>;
 }
 
-const calculateFinanceTotals = (transactions: CashTransaction[]): FinanceTotals => {
+export interface FinanceTotalsOverride {
+    id: string;
+    cash_in_bank: number;
+    total_receipts: number;
+    total_disbursements: number;
+    is_manual_override: boolean;
+}
+
+const calculateFinanceTotals = (transactions: CashTransaction[], override?: FinanceTotalsOverride): FinanceTotals => {
+    if (override && override.is_manual_override) {
+        return {
+            cashInBank: override.cash_in_bank,
+            totalReceipts: override.total_receipts,
+            totalDisbursements: override.total_disbursements
+        };
+    }
+
     const receipts = transactions.filter(t => t.type === 'receipt').reduce((sum, t) => sum + Number(t.amount), 0);
     const disbursements = transactions.filter(t => t.type === 'disbursement').reduce((sum, t) => sum + Number(t.amount), 0);
     return {
@@ -79,6 +98,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     requirements: [],
     events: [],
     cashTransactions: [],
+    financeTotalsOverride: undefined,
     financeTotals: { cashInBank: 0, totalReceipts: 0, totalDisbursements: 0 },
     isLoading: true, // Start as true to show skeletons immediately on app load
     error: null,
@@ -105,14 +125,16 @@ export const useAppStore = create<AppState>((set, get) => ({
                 staffRes,
                 reqsRes,
                 eventsRes,
-                cashRes
+                cashRes,
+                financeTotalsRes
             ] = await Promise.all([
                 supabase.from('tenants').select('*'),
                 supabase.from('bills').select('*'),
                 supabase.from('staff').select('*'),
                 supabase.from('requirements').select('*'),
                 supabase.from('events').select('*'),
-                supabase.from('cash_transactions').select('*')
+                supabase.from('cash_transactions').select('*'),
+                supabase.from('finance_totals').select('*').limit(1).maybeSingle()
             ]);
 
             if (tenantsRes.error) throw tenantsRes.error;
@@ -121,6 +143,9 @@ export const useAppStore = create<AppState>((set, get) => ({
             if (reqsRes.error) throw reqsRes.error;
             if (eventsRes.error) throw eventsRes.error;
             if (cashRes.error) throw cashRes.error;
+            if (financeTotalsRes.error && financeTotalsRes.error.code !== 'PGRST116') {
+                throw financeTotalsRes.error;
+            }
 
             const cashTransactions = cashRes.data || [];
 
@@ -175,7 +200,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                 requirements: reqsRes.data || [],
                 events: [...(eventsRes.data || []), ...dynamicEvents],
                 cashTransactions,
-                financeTotals: calculateFinanceTotals(cashTransactions),
+                financeTotalsOverride: financeTotalsRes.data || undefined,
+                financeTotals: calculateFinanceTotals(cashTransactions, financeTotalsRes.data || undefined),
                 isLoading: false
             });
         } catch (err: any) {
@@ -453,6 +479,32 @@ export const useAppStore = create<AppState>((set, get) => ({
             set({
                 cashTransactions: newTransactions,
                 financeTotals: calculateFinanceTotals(newTransactions),
+                isLoading: false
+            });
+        } catch (err: any) {
+            set({ error: err.message, isLoading: false });
+        }
+    },
+
+    updateFinanceTotals: async (totals) => {
+        set({ isLoading: true, error: null });
+        try {
+            let currentOverride = get().financeTotalsOverride as any;
+
+            // If the row doesn't exist yet we must insert vs update
+            if (!currentOverride || !currentOverride.id) {
+                const { data, error } = await supabase.from('finance_totals').insert([{ ...totals, is_manual_override: true }]).select().single();
+                if (error) throw error;
+                currentOverride = data;
+            } else {
+                const { data, error } = await supabase.from('finance_totals').update({ ...totals, is_manual_override: true }).eq('id', currentOverride.id).select().single();
+                if (error) throw error;
+                currentOverride = data;
+            }
+
+            set({
+                financeTotalsOverride: currentOverride,
+                financeTotals: calculateFinanceTotals(get().cashTransactions, currentOverride),
                 isLoading: false
             });
         } catch (err: any) {
