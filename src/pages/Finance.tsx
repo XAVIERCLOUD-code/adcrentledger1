@@ -142,6 +142,9 @@ export default function Finance() {
                 </div>
                 {isAdmin && (
                     <div className="flex gap-2">
+                        <Button onClick={handleOpenEditTotals} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                            <Edit className="mr-2 h-4 w-4" /> Override Totals
+                        </Button>
                         <Button onClick={() => setIsReceiptModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
                             <Plus className="mr-2 h-4 w-4" /> Add Receipt
                         </Button>
@@ -164,11 +167,6 @@ export default function Finance() {
                             Current available balance {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
-                    {isAdmin && (
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
-                            <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </Button>
-                    )}
                 </Card>
                 <Card className="group relative">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -181,11 +179,6 @@ export default function Finance() {
                             All time incoming {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
-                    {isAdmin && (
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
-                            <Edit className="h-4 w-4 text-muted-foreground hover:text-emerald-500" />
-                        </Button>
-                    )}
                 </Card>
                 <Card className="group relative">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -198,11 +191,6 @@ export default function Finance() {
                             All time expenses {financeTotalsOverride?.is_manual_override && "(Manual)"}
                         </p>
                     </CardContent>
-                    {isAdmin && (
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleOpenEditTotals}>
-                            <Edit className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                        </Button>
-                    )}
                 </Card>
             </div>
 
