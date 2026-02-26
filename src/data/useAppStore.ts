@@ -134,7 +134,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                 supabase.from('requirements').select('*'),
                 supabase.from('events').select('*'),
                 supabase.from('cash_transactions').select('*'),
-                supabase.from('finance_totals').select('*').limit(1).maybeSingle()
+                supabase.from('finance_totals').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle()
             ]);
 
             if (tenantsRes.error) throw tenantsRes.error;
@@ -444,7 +444,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const newTransactions = [...get().cashTransactions, data as CashTransaction];
             set({
                 cashTransactions: newTransactions,
-                financeTotals: calculateFinanceTotals(newTransactions),
+                financeTotals: calculateFinanceTotals(newTransactions, get().financeTotalsOverride),
                 isLoading: false
             });
         } catch (err: any) {
@@ -461,7 +461,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const newTransactions = get().cashTransactions.map(t => t.id === transaction.id ? transaction : t);
             set({
                 cashTransactions: newTransactions,
-                financeTotals: calculateFinanceTotals(newTransactions),
+                financeTotals: calculateFinanceTotals(newTransactions, get().financeTotalsOverride),
                 isLoading: false
             });
         } catch (err: any) {
@@ -478,7 +478,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const newTransactions = get().cashTransactions.filter(t => t.id !== id);
             set({
                 cashTransactions: newTransactions,
-                financeTotals: calculateFinanceTotals(newTransactions),
+                financeTotals: calculateFinanceTotals(newTransactions, get().financeTotalsOverride),
                 isLoading: false
             });
         } catch (err: any) {
