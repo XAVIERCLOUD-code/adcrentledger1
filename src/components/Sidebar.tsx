@@ -97,7 +97,7 @@ export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
                         </div>
                         <div className="flex-1 overflow-hidden">
                             <p className="text-sm font-semibold truncate text-foreground">{user?.name || "User"}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{user?.role || "Guest"}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">{user?.role === 'viewer' ? 'CEO' : (user?.role || "Guest")}</p>
                         </div>
                     </div>
 
