@@ -1,14 +1,14 @@
 import { useState } from "react";
 // Temporarily mock login here since auth isn't fully set up with Supabase yet.
 const mockLogin = (user: string, pass: string) => {
-    if (user === 'admin' && pass === 'admin123') {
-        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '1', name: 'Admin User', role: 'admin' }));
+    if (user === 'Isobel' && pass === 'venus_tinker') {
+        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '1', name: 'Isobel', role: 'admin' }));
         localStorage.setItem('adc_auth_token_v2', 'mock-jwt-token-admin');
         window.dispatchEvent(new Event('storage'));
         return true;
     }
-    if (user === 'viewer' && pass === 'viewer123') {
-        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '2', name: 'Viewer User', role: 'viewer' }));
+    if (user === 'Avelinda' && pass === 'Richlind') {
+        localStorage.setItem('adc_user_v2', JSON.stringify({ id: '2', name: 'Avelinda', role: 'viewer' }));
         localStorage.setItem('adc_auth_token_v2', 'mock-jwt-token-viewer');
         window.dispatchEvent(new Event('storage'));
         return true;
@@ -174,9 +174,7 @@ const Login = () => {
                             </form>
 
                             <div className="mt-10 flex flex-col items-center">
-                                <div className="text-center text-[11px] text-muted-foreground bg-white/5 border border-white/10 px-4 py-2.5 rounded-lg backdrop-blur-sm shadow-inner transition-colors hover:bg-white/10">
-                                    <p>Demo Admin: <span className="font-mono text-foreground font-bold tracking-tight">admin/admin123</span> &bull; Viewer: <span className="font-mono text-foreground font-bold tracking-tight">viewer/viewer123</span></p>
-                                </div>
+                                {/* Removed Demo Login Info */}
 
                                 <div className="text-center mt-6 text-xs text-muted-foreground/60 font-medium">
                                     © {new Date().getFullYear()} ADC Building. All Rights Reserved.
