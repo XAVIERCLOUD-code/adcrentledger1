@@ -17,6 +17,7 @@ import { useAppStore } from "@/data/useAppStore";
 import CalendarEvents from "./pages/Calendar";
 import { ThemeProvider } from "@/components/theme-provider";
 import IdleTimer from "./components/IdleTimer";
+import { ReloadPrompt } from "./components/ReloadPrompt";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          <ReloadPrompt />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

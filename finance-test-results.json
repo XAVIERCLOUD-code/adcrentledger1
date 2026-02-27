@@ -1,0 +1,60 @@
+{
+  "select": {
+    "data": [
+      {
+        "id": "14f43e58-d851-4621-bf8a-d164b7fea441",
+        "cash_in_bank": 100,
+        "total_receipts": 100,
+        "total_disbursements": 100,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:29:55.658454+00:00"
+      },
+      {
+        "id": "b538fc89-a2e0-467c-8843-513709c029ad",
+        "cash_in_bank": 1002,
+        "total_receipts": 1002,
+        "total_disbursements": 1000,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:40:30.318553+00:00"
+      },
+      {
+        "id": "752f1939-4731-4671-a1ef-ea14811cacdf",
+        "cash_in_bank": 100,
+        "total_receipts": 199,
+        "total_disbursements": 299,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:28:57.247336+00:00"
+      },
+      {
+        "id": "20e45179-3a1b-46ef-ba77-7e942b73bf95",
+        "cash_in_bank": 100,
+        "total_receipts": 200,
+        "total_disbursements": 50,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:45:00.358673+00:00"
+      },
+      {
+        "id": "1f50bf2c-59be-4e98-afdb-61b5415ce716",
+        "cash_in_bank": 100,
+        "total_receipts": 200,
+        "total_disbursements": 50,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:45:49.231593+00:00"
+      }
+    ],
+    "error": null
+  },
+  "insert": {
+    "data": [
+      {
+        "id": "e7f5bfff-6dfb-4862-92aa-0a6aba816fca",
+        "cash_in_bank": 100,
+        "total_receipts": 200,
+        "total_disbursements": 50,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:47:09.541155+00:00"
+      }
+    ],
+    "error": null
+  }
+}
