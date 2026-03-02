@@ -514,7 +514,62 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // --- MISC ---
     checkAndGenerateMonthlyBills: async () => {
-        // Mock implementation for now to prevent app crash
-        console.log("checkAndGenerateMonthlyBills called");
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; // e.g. "2026-03"
+
+        // Only run the full check once per calendar month (avoids Supabase calls on every page load)
+        const lastCheckedKey = 'adc_bill_gen_last_month';
+        const lastChecked = localStorage.getItem(lastCheckedKey);
+        if (lastChecked === currentMonth) {
+            return;
+        }
+
+        try {
+            // Fetch current tenants and bills fresh from supabase
+            const [tenantsRes, billsRes] = await Promise.all([
+                supabase.from('tenants').select('*'),
+                supabase.from('bills').select('*').eq('month', currentMonth),
+            ]);
+
+            if (tenantsRes.error) throw tenantsRes.error;
+            if (billsRes.error) throw billsRes.error;
+
+            const tenants: any[] = tenantsRes.data || [];
+            const existingBillTenantIds = new Set((billsRes.data || []).map((b: any) => b.tenantId));
+
+            const newBills: any[] = [];
+            for (const tenant of tenants) {
+                if (existingBillTenantIds.has(tenant.id)) continue; // Bill already exists
+
+                const billAmount = tenant.totalDue ?? tenant.rentGross ?? 0;
+
+                newBills.push({
+                    id: crypto.randomUUID(),
+                    tenantId: tenant.id,
+                    month: currentMonth,
+                    totalBill: billAmount,
+                    isPaid: false,
+                    paidDate: null,
+                    createdAt: new Date().toISOString(),
+                    rent: tenant.rentGross ?? 0,
+                });
+            }
+
+            if (newBills.length > 0) {
+                const { error: insertError } = await supabase.from('bills').insert(newBills);
+                if (insertError) throw insertError;
+                console.log(`[ADC] Generated ${newBills.length} bill(s) for ${currentMonth}`);
+            } else {
+                console.log(`[ADC] Bills for ${currentMonth} already exist for all tenants.`);
+            }
+
+            // Mark this month as checked so we don't re-run unnecessarily
+            localStorage.setItem(lastCheckedKey, currentMonth);
+
+            // Refresh the bills in the store
+            await get().fetchData();
+        } catch (err: any) {
+            console.error('[ADC] Failed to generate monthly bills:', err.message);
+        }
     }
 }));
