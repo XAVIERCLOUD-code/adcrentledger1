@@ -1,0 +1,6 @@
+{
+  "code": "23502",
+  "details": "Failing row contains (null, t5, 2026-03, 31526.79, f, null, 2026-03-02T05:51:12.467Z, 33000, null, null, null, null).",
+  "hint": null,
+  "message": "null value in column \"id\" of relation \"bills\" violates not-null constraint"
+}

@@ -9,12 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarEvent, } from "@/data/types";
 import { useAppStore } from "@/data/useAppStore";
+import { useEvents, useAddEvent, useDeleteEvent } from "@/data/queries/events";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const Calendar = () => {
     const { toast } = useToast();
-    const { events, addEvent, deleteEvent, user } = useAppStore();
+    const { user } = useAppStore();
+    const { data: events = [] } = useEvents();
+    const addEventMutation = useAddEvent();
+    const deleteEventMutation = useDeleteEvent();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -74,14 +78,14 @@ const Calendar = () => {
             description: newEventDesc + (eventTime ? ` @ ${eventTime}` : "")
         };
 
-        await addEvent(newEvent);
+        await addEventMutation.mutateAsync(newEvent);
         setShowAddDialog(false);
         toast({ title: "Event Added", description: `${newEventTitle} on ${format(selectedDate, "MMM d")}` });
     };
 
     const handleDeleteEvent = async () => {
         if (!selectedEvent) return;
-        await deleteEvent(selectedEvent.id);
+        await deleteEventMutation.mutateAsync(selectedEvent.id);
         setShowEventDialog(false);
         toast({ title: "Event Deleted" });
     };

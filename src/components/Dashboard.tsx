@@ -1,5 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/data/useAppStore";
+import { useTenants, useRemoveTenant } from "@/data/queries/tenants";
+import { useBills } from "@/data/queries/bills";
+import { useRequirements } from "@/data/queries/requirements";
 import { Tenant } from "@/data/types";
 import TenantCard from "./TenantCard";
 import TenantProfile from "./TenantProfile";
@@ -35,7 +38,14 @@ const floorOptions = [0, 1, 2, 3] as const;
 const floorLabels: Record<number, string> = { 0: "All Floors", 1: "1st Floor", 2: "2nd Floor", 3: "3rd Floor" };
 
 const Dashboard = () => {
-  const { tenants, bills, requirements, isLoading, fetchData, removeTenant: storeRemoveTenant, user } = useAppStore();
+  const { user } = useAppStore();
+  const { data: tenants = [], isLoading: isTenantsLoading } = useTenants();
+  const { data: bills = [], isLoading: isBillsLoading } = useBills();
+  const { data: requirements = [], isLoading: isReqLoading } = useRequirements();
+  const removeTenantMutation = useRemoveTenant();
+
+  const isLoading = isTenantsLoading || isBillsLoading || isReqLoading;
+
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [floorFilter, setFloorFilter] = useState<number>(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -45,11 +55,6 @@ const Dashboard = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   // Month Filter State
   const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
-
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const isViewer = user?.role === 'viewer';
 
@@ -95,7 +100,7 @@ const Dashboard = () => {
 
   const handleRemoveTenant = async () => {
     if (!tenantToRemove) return;
-    await storeRemoveTenant(tenantToRemove.id);
+    await removeTenantMutation.mutateAsync(tenantToRemove.id);
     toast({ title: "Tenant removed", description: `${tenantToRemove.name} and all their billing records have been removed.` });
     setTenantToRemove(null);
   };
@@ -147,7 +152,7 @@ const Dashboard = () => {
     return (
       <TenantProfile
         tenant={activeTenant}
-        onBack={() => { setSelectedTenant(null); fetchData(); }}
+        onBack={() => { setSelectedTenant(null); }}
       />
     );
   }
@@ -286,9 +291,9 @@ const Dashboard = () => {
 
       {/* Add Tenant Form Modal */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-        <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-xl">
+        <DialogContent className="p-0 border-none bg-transparent shadow-none w-[95vw] md:max-w-xl">
           <AddTenantForm
-            onAdded={() => { fetchData(); setShowAddForm(false); }}
+            onAdded={() => { setShowAddForm(false); }}
             onClose={() => setShowAddForm(false)}
           />
         </DialogContent>

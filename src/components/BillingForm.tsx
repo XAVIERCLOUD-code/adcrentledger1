@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BillRecord, Tenant } from "@/data/types";
 import { useAppStore } from "@/data/useAppStore";
+import { useBills, useAddBill } from "@/data/queries/bills";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +17,9 @@ interface BillingFormProps {
 
 const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
   const { toast } = useToast();
-  const { addBill, isLoading } = useAppStore();
+  const { data: bills = [] } = useBills();
+  const addBillMutation = useAddBill();
+  const isLoading = addBillMutation.isPending;
   const [amount, setAmount] = useState<string>("");
   const [month, setMonth] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -47,8 +50,7 @@ const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
       return;
     }
 
-    const currentBills = useAppStore.getState().bills;
-    const existingBill = currentBills.find(
+    const existingBill = bills.find(
       (b) => b.tenantId === tenant.id && b.month === month
     );
 
@@ -71,7 +73,7 @@ const BillingForm = ({ tenant, onSuccess, onCancel }: BillingFormProps) => {
     };
 
     setIsSendingEmail(true);
-    await addBill(newBill);
+    await addBillMutation.mutateAsync(newBill);
 
     // Send automated email if tenant has an email address
     if (tenant.email) {

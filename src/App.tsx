@@ -34,11 +34,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  const { checkAndGenerateMonthlyBills } = useAppStore();
-
-  useEffect(() => {
-    checkAndGenerateMonthlyBills();
-  }, [checkAndGenerateMonthlyBills]);
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">

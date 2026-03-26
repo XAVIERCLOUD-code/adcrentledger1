@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Tenant, BillRecord } from "@/data/types";
 import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter } from "lucide-react";
 import { useAppStore } from "@/data/useAppStore";
+import { useBills, useToggleBillPaid } from "@/data/queries/bills";
+import { useUpdateTenant } from "@/data/queries/tenants";
 import StatusBadge, { BillTypeIndicators } from "./StatusBadge";
 import BillingForm from "./BillingForm";
 import { Button } from "@/components/ui/button";
@@ -25,7 +27,10 @@ interface TenantProfileProps {
 }
 
 const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
-  const { bills, user, updateTenant, toggleBillPaid, fetchData } = useAppStore();
+  const { user } = useAppStore();
+  const { data: bills = [] } = useBills();
+  const updateTenantMutation = useUpdateTenant();
+  const toggleBillPaidMutation = useToggleBillPaid();
 
   // Filter bills just for this tenant
   const tenantBills = useMemo(() =>
@@ -61,7 +66,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
       contactPerson: editContactName,
       email: editEmail,
     };
-    await updateTenant(updatedTenant);
+    await updateTenantMutation.mutateAsync(updatedTenant);
     setIsEditingContact(false);
     toast({ title: "Contact Details Updated", description: "Tenant contact information has been saved." });
   };
@@ -85,7 +90,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
       ewtPercent: editEwt ? parseFloat(editEwt) : undefined,
     };
 
-    await updateTenant(updatedTenant);
+    await updateTenantMutation.mutateAsync(updatedTenant);
     setIsEditingLease(false);
     toast({ title: "Lease Details Updated", description: "Tenant lease information has been saved." });
   };
@@ -126,7 +131,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   };
 
   const handleTogglePaid = async (billId: string, newIsPaid: boolean) => {
-    await toggleBillPaid(billId);
+    await toggleBillPaidMutation.mutateAsync({ billId, isPaid: newIsPaid });
     const statusText = newIsPaid ? "Paid" : "Unpaid";
     toast({ title: "Status Updated", description: `Bill marked as ${statusText}` });
   };
@@ -145,30 +150,32 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   return (
     <div className="space-y-6 animate-fade-in pb-20 p-2 md:p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-muted/80">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{tenant.name}</h1>
-          <p className="text-muted-foreground flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-md bg-secondary/50 px-2 py-0.5 text-xs font-medium text-secondary-foreground border border-border">
-              Unit {tenant.unit}
-            </span>
-            <span className="text-xs">•</span>
-            <span className="text-sm">Tenant Profile</span>
-          </p>
-        </div>
-        {!isViewer && (
-          <Button onClick={() => setShowBillingForm(true)} className="gap-2 shadow-lg shadow-primary/20">
-            <Plus className="h-4 w-4" /> New Bill
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
+          <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-muted/80 shrink-0">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-        )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground truncate">{tenant.name}</h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-md bg-secondary/50 px-2 py-0.5 text-xs font-medium text-secondary-foreground border border-border">
+                Unit {tenant.unit}
+              </span>
+              <span className="text-xs">•</span>
+              <span className="text-sm">Tenant Profile</span>
+            </p>
+          </div>
+          {!isViewer && (
+            <Button onClick={() => setShowBillingForm(true)} className="gap-2 shadow-lg shadow-primary/20 w-full md:w-auto">
+              <Plus className="h-4 w-4" /> New Bill
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-4">
         {/* Left Column: Info Cards */}
-        <div className="space-y-6 lg:col-span-1">
+        <div className="space-y-6 lg:col-span-1 xl:col-span-1">
           {/* Contact Info */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
@@ -381,11 +388,11 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
         </div>
 
         {/* Right Column: Billing History */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 xl:col-span-3">
           <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="p-6 border-b border-border/50 flex items-center justify-between glass-card-header">
+            <div className="p-4 md:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card-header">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
                   <History className="h-4 w-4 text-emerald-500" />
                 </div>
                 <h3 className="font-semibold text-lg">Billing History</h3>
@@ -410,82 +417,84 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-x-auto">
               {filteredBills.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground p-4 text-center">
                   <Receipt className="h-12 w-12 opacity-20 mb-3" />
                   <p>No billing records found for this period.</p>
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    <tr>
-                      <th className="px-6 py-3 text-left">Period</th>
-                      <th className="px-6 py-3 text-right">Amount</th>
-                      <th className="px-6 py-3 text-center">Status</th>
-                      <th className="px-6 py-3 text-center">Breakdown</th>
-                      {!isViewer && <th className="px-6 py-3 text-right">Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                    {filteredBills.map((bill) => (
-                      <tr key={bill.id} className="group hover:bg-muted/20 transition-colors">
-                        <td className="px-6 py-4 font-medium">
-                          {bill.month}
-                          {bill.paidDate && (
-                            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                              Paid {bill.paidDate}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right font-mono font-bold">
-                          ₱{bill.totalBill.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center">
-                            <StatusBadge isPaid={bill.isPaid} />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center">
-                            <BillTypeIndicators bill={bill} />
-                          </div>
-                        </td>
-                        {!isViewer && (
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-3">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={bill.isPaid}
-                                  onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
-                                  className="scale-75 data-[state=checked]:bg-emerald-500"
-                                />
-                                <Label className="text-xs text-muted-foreground font-normal">
-                                  {bill.isPaid ? "Paid" : "Unpaid"}
-                                </Label>
+                <div className="md:min-w-0 min-w-[800px] inline-block w-full align-middle">
+                  <table className="w-full text-sm whitespace-nowrap">
+                    <thead className="bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 md:px-6 py-3 text-left">Period</th>
+                        <th className="px-4 md:px-6 py-3 text-right">Amount</th>
+                        <th className="px-4 md:px-6 py-3 text-center">Status</th>
+                        <th className="px-4 md:px-6 py-3 text-center">Breakdown</th>
+                        {!isViewer && <th className="px-4 md:px-6 py-3 text-right">Actions</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {filteredBills.map((bill) => (
+                        <tr key={bill.id} className="group hover:bg-muted/20 transition-colors">
+                          <td className="px-4 md:px-6 py-4 font-medium">
+                            {bill.month}
+                            {bill.paidDate && (
+                              <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                Paid {bill.paidDate}
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs gap-1 ml-2 border-dashed"
-                                onClick={() => handleNotify(bill)}
-                                disabled={!!loadingEmail}
-                              >
-                                {loadingEmail === bill.id ? (
-                                  <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
-                                ) : (
-                                  <Bell className="h-3 w-3" />
-                                )}
-                                Notify
-                              </Button>
+                            )}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 text-right font-mono font-bold">
+                            ₱{bill.totalBill.toLocaleString()}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 text-center">
+                            <div className="flex justify-center">
+                              <StatusBadge isPaid={bill.isPaid} />
                             </div>
                           </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <td className="px-4 md:px-6 py-4">
+                            <div className="flex justify-center">
+                              <BillTypeIndicators bill={bill} />
+                            </div>
+                          </td>
+                          {!isViewer && (
+                            <td className="px-4 md:px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={bill.isPaid}
+                                    onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
+                                    className="scale-75 data-[state=checked]:bg-emerald-500"
+                                  />
+                                  <Label className="text-xs text-muted-foreground font-normal">
+                                    {bill.isPaid ? "Paid" : "Unpaid"}
+                                  </Label>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 ml-2 border-dashed"
+                                  onClick={() => handleNotify(bill)}
+                                  disabled={!!loadingEmail}
+                                >
+                                  {loadingEmail === bill.id ? (
+                                    <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                  ) : (
+                                    <Bell className="h-3 w-3" />
+                                  )}
+                                  Notify
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
@@ -495,7 +504,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
       {showBillingForm && (
         <BillingForm
           tenant={tenant}
-          onSuccess={() => { fetchData(); setShowBillingForm(false); }}
+          onSuccess={() => { setShowBillingForm(false); }}
           onCancel={() => setShowBillingForm(false)}
         />
       )}

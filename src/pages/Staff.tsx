@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Shield, User, Briefcase, Users, Mail, Phone, CalendarDays, Edit2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/data/useAppStore";
+import { useStaff, useUpdateStaff } from "@/data/queries/staff";
 import { Staff as StaffType } from "@/data/types";
 
 // Helper to map string icon names back to Lucide components
@@ -14,7 +15,9 @@ const getIcon = (iconName: string) => {
 };
 
 const Staff = () => {
-    const { staff: staffList, updateStaff, user } = useAppStore();
+    const { user } = useAppStore();
+    const { data: staffList = [] } = useStaff();
+    const updateStaffMutation = useUpdateStaff();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<StaffType | null>(null);
 
@@ -32,7 +35,7 @@ const Staff = () => {
 
     const handleSaveEdit = async () => {
         if (editData) {
-            await updateStaff(editData);
+            await updateStaffMutation.mutateAsync(editData);
             setEditingId(null);
             setEditData(null);
         }
@@ -51,8 +54,8 @@ const Staff = () => {
                 </div>
             </div>
 
-            {/* Staff Grid - Wider cards */}
-            <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {/* Staff Grid - Premium Horizontal Cards */}
+            <div className="grid gap-6 sm:grid-cols-1 xl:grid-cols-2">
                 {staffList.map((staff, i) => {
                     const IconComponent = getIcon(staff.iconName);
                     const isEditing = editingId === staff.id;
@@ -61,109 +64,101 @@ const Staff = () => {
                     return (
                         <div
                             key={staff.id}
-                            className="group relative flex flex-col pt-16 px-6 pb-6 bg-card border border-border/50 rounded-2xl hover:border-primary/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 animate-fade-in overflow-hidden"
+                            className="group relative flex flex-col md:flex-row p-6 glass-card-horizontal rounded-2xl hover:border-primary/50 transition-all duration-300 animate-fade-in overflow-hidden gap-6 items-start"
                             style={{ animationDelay: `${i * 100}ms` }}
                         >
-                            {/* Decorative Header Background */}
-                            <div className={`absolute top-0 left-0 right-0 h-24 ${displayData.bg} opacity-50 z-0`}></div>
+                            {/* Glowing Background Accent */}
+                            <div className={`absolute top-0 right-0 w-64 h-full ${displayData.bg} opacity-10 blur-[80px] pointer-events-none rounded-r-2xl`}></div>
 
-                            {/* Transparent ADC Logo Background */}
-                            <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.04]">
-                                <img src="/favicon.ico" alt="" className="w-64 h-64 object-contain grayscale" />
-                            </div>
-
-                            {/* Avatar */}
-                            <div className="relative z-10 flex justify-center -mt-16 mb-4">
-                                <div className="relative group/avatar">
-                                    <div className={`flex items-center justify-center w-32 h-32 rounded-full ${displayData.bg} ${displayData.color} ring-4 ring-background shadow-xl overflow-hidden bg-background transition-transform duration-300 ${!isEditing && 'group-hover:scale-105'}`}>
-                                        {displayData.imageUrl ? (
-                                            <img src={displayData.imageUrl} alt={displayData.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <img
-                                                src={`/${displayData.name.split(' ')[0].toLowerCase()}-avatar.jpg`}
-                                                alt={displayData.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback to icon if image not found in public folder
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.parentElement?.querySelector('svg')?.style.setProperty('display', 'block');
-                                                }}
-                                            />
-                                        )}
-                                        {/* Hidden fallback icon shown if image fails to load */}
-                                        <IconComponent className="w-12 h-12 hidden" />
-                                    </div>
+                            {/* Left Side: Avatar Container */}
+                            <div className="relative z-10 flex flex-col items-center justify-center shrink-0 w-full md:w-auto">
+                                <div className={`flex items-center justify-center w-32 h-32 md:w-28 md:h-28 rounded-full ${displayData.bg} ${displayData.color} ring-4 ring-background shadow-xl overflow-hidden bg-background mb-4 transition-transform duration-300 ${!isEditing && 'group-hover:scale-105'}`}>
+                                    {displayData.imageUrl ? (
+                                        <img src={displayData.imageUrl} alt={displayData.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <img
+                                            src={`/${displayData.name.split(' ')[0].toLowerCase()}-avatar.jpg`}
+                                            alt={displayData.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.parentElement?.querySelector('svg')?.style.setProperty('display', 'block');
+                                            }}
+                                        />
+                                    )}
+                                    <IconComponent className="w-10 h-10 hidden" />
                                 </div>
+
+                                {!isEditing && (
+                                    <div className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase border ${displayData.bg} border-current opacity-80 backdrop-blur-sm shadow-sm flex items-center gap-1.5 whitespace-nowrap`}>
+                                        {displayData.role}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Card Body */}
-                            <div className="relative z-10 flex flex-col flex-1">
-                                {/* Name and Role */}
-                                <div className="text-center mb-6">
+                            {/* Right Side: Information Body */}
+                            <div className="relative z-10 flex flex-col flex-1 w-full min-w-0">
+                                {/* Header Row */}
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-full pr-4">
+                                        {isEditing ? (
+                                            <div className="space-y-3">
+                                                <input
+                                                    type="text"
+                                                    value={displayData.name}
+                                                    onChange={(e) => setEditData({ ...displayData, name: e.target.value })}
+                                                    className="w-full text-xl font-bold bg-background/50 border border-border/50 rounded-md px-3 py-2"
+                                                    placeholder="Full Name"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={displayData.role}
+                                                    onChange={(e) => setEditData({ ...displayData, role: e.target.value })}
+                                                    className="w-full text-sm font-semibold uppercase tracking-wider text-primary bg-background/50 border border-border/50 rounded-md px-3 py-2"
+                                                    placeholder="Role Title"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <h3 className="text-2xl font-bold text-foreground truncate tracking-tight">{displayData.name}</h3>
+                                        )}
+                                    </div>
+                                    {isAdmin && !isEditing && (
+                                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 text-muted-foreground hover:text-primary rounded-full hover:bg-primary/10 transition-colors" onClick={() => handleEditClick(staff)}>
+                                            <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Contact Pills */}
+                                <div className="flex flex-wrap gap-2 mb-6">
                                     {isEditing ? (
-                                        <div className="space-y-2">
-                                            <input
-                                                type="text"
-                                                value={displayData.name}
-                                                onChange={(e) => setEditData({ ...displayData, name: e.target.value })}
-                                                className="w-full text-center text-xl font-bold bg-background/50 border border-border/50 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
-                                                placeholder="Full Name"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={displayData.role}
-                                                onChange={(e) => setEditData({ ...displayData, role: e.target.value })}
-                                                className="w-full text-center text-sm font-semibold uppercase tracking-wider text-primary bg-background/50 border border-border/50 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
-                                                placeholder="Role Title"
-                                            />
+                                        <div className="w-full space-y-2">
+                                            <input type="email" value={displayData.email || ''} onChange={(e) => setEditData({ ...displayData, email: e.target.value })} className="w-full bg-background/50 border border-border/50 rounded-md px-3 py-2 text-sm" placeholder="Email Address" />
+                                            <input type="text" value={displayData.phone || ''} onChange={(e) => setEditData({ ...displayData, phone: e.target.value })} className="w-full bg-background/50 border border-border/50 rounded-md px-3 py-2 text-sm" placeholder="Phone Number" />
                                         </div>
                                     ) : (
                                         <>
-                                            <h3 className="text-xl font-bold text-foreground truncate">{displayData.name}</h3>
-                                            <p className="text-sm font-bold uppercase tracking-wider text-primary mt-0.5">{displayData.role}</p>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/40 border border-border/50 text-sm font-medium shadow-sm hover:bg-background/80 transition-colors cursor-default">
+                                                <Mail className="w-3.5 h-3.5 text-primary" />
+                                                <span className="truncate max-w-[200px]">{displayData.email || "No email"}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/40 border border-border/50 text-sm font-medium shadow-sm hover:bg-background/80 transition-colors cursor-default">
+                                                <Phone className="w-3.5 h-3.5 text-primary" />
+                                                <span>{displayData.phone || "No phone"}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/40 border border-border/50 text-sm font-medium shadow-sm hover:bg-background/80 transition-colors cursor-default">
+                                                <CalendarDays className="w-3.5 h-3.5 text-primary" />
+                                                <span>Joined: {displayData.id === "1" ? "2015" : "2022"}</span>
+                                            </div>
                                         </>
                                     )}
                                 </div>
 
-                                {/* Contact Details */}
-                                <div className="space-y-3 p-4 bg-muted/20 rounded-xl border border-border/50 mb-6 flex-1">
-                                    <div className="flex items-center gap-3">
-                                        <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        {isEditing ? (
-                                            <input
-                                                type="email"
-                                                value={displayData.email || ''}
-                                                onChange={(e) => setEditData({ ...displayData, email: e.target.value })}
-                                                className="flex-1 bg-background/50 border border-border/50 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
-                                                placeholder="Email Address"
-                                            />
-                                        ) : (
-                                            <span className="text-sm text-foreground truncate">{displayData.email || "No email provided"}</span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        {isEditing ? (
-                                            <input
-                                                type="text"
-                                                value={displayData.phone || ''}
-                                                onChange={(e) => setEditData({ ...displayData, phone: e.target.value })}
-                                                className="flex-1 bg-background/50 border border-border/50 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
-                                                placeholder="Phone Number"
-                                            />
-                                        ) : (
-                                            <span className="text-sm text-foreground truncate">{displayData.phone || "No phone provided"}</span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm text-foreground">Joined: {displayData.id === "1" ? "2015" : "2022"}</span>
-                                    </div>
-                                </div>
-
                                 {/* Responsibilities Tags */}
-                                <div className="mb-6">
-                                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Responsibilities</h4>
+                                <div className="mt-auto">
+                                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                                        Responsibilities <span className="h-px bg-border/50 flex-1"></span>
+                                    </h4>
                                     {isEditing ? (
                                         <textarea
                                             value={displayData.info.join(', ')}
@@ -173,9 +168,9 @@ const Staff = () => {
                                         />
                                     ) : (
                                         displayData.info && displayData.info.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1.5">
+                                            <div className="flex flex-wrap gap-2">
                                                 {displayData.info.map((infoText, idx) => (
-                                                    <span key={idx} className="text-[10px] font-semibold bg-secondary text-secondary-foreground border border-border/50 px-2 py-1 rounded-md">
+                                                    <span key={idx} className="text-xs font-medium bg-secondary/80 text-secondary-foreground border border-border/50 shadow-sm px-2.5 py-1 rounded-md hover:bg-secondary transition-colors cursor-default">
                                                         {infoText}
                                                     </span>
                                                 ))}
@@ -186,20 +181,11 @@ const Staff = () => {
                                     )}
                                 </div>
 
-                                {/* Card Footer Actions */}
-                                {isAdmin && (
-                                    <div className="mt-auto pt-4 border-t border-border/50 flex gap-2 justify-end">
-                                        {isEditing ? (
-                                            <>
-                                                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>Cancel</Button>
-                                                <Button size="sm" onClick={handleSaveEdit}>Save</Button>
-                                            </>
-                                        ) : (
-                                            <Button variant="outline" size="sm" className="w-full relative z-10" onClick={(e) => { e.stopPropagation(); handleEditClick(staff); }}>
-                                                <Edit2 className="w-3.5 h-3.5 mr-2" />
-                                                Edit Profile
-                                            </Button>
-                                        )}
+                                {/* Edit Actions */}
+                                {isAdmin && isEditing && (
+                                    <div className="mt-6 pt-4 border-t border-border/50 flex gap-2 justify-end bg-background/20 -mx-6 -mb-6 p-4 rounded-b-2xl">
+                                        <Button variant="ghost" size="sm" onClick={handleCancelEdit}>Cancel</Button>
+                                        <Button size="sm" onClick={handleSaveEdit}>Save Changes</Button>
                                     </div>
                                 )}
                             </div>

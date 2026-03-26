@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Bell, AlertTriangle, FileCheck2, Banknote, CalendarClock, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAppStore } from "@/data/useAppStore";
+import { useTenants } from "@/data/queries/tenants";
+import { useBills } from "@/data/queries/bills";
+import { useRequirements } from "@/data/queries/requirements";
 import { cn } from "@/lib/utils";
 
 interface NotificationAlert {
@@ -19,7 +22,9 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ onNavigate }: NotificationBellProps = {}) {
-    const { tenants, bills, requirements } = useAppStore();
+    const { data: tenants = [] } = useTenants();
+    const { data: bills = [] } = useBills();
+    const { data: requirements = [] } = useRequirements();
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
 

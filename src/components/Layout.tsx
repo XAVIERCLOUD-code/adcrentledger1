@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar, { SidebarContent } from "./Sidebar";
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/data/useAppStore";
+import { useRequirements } from "@/data/queries/requirements";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
@@ -9,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const Layout = () => {
     const [open, setOpen] = useState(false);
-    const { requirements } = useAppStore();
+    const { data: requirements = [] } = useRequirements();
 
     useEffect(() => {
         // Check for expiring compliance items
@@ -62,7 +63,7 @@ export const Layout = () => {
             </div>
 
             <main className="md:pl-64 transition-all duration-300 relative">
-                <div className="mx-auto max-w-7xl px-4 py-4 md:px-8 md:py-8 overflow-hidden min-h-screen">
+                <div className="mx-auto max-w-[1400px] px-2 py-4 sm:px-4 md:px-8 md:py-8 overflow-hidden min-h-screen">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}

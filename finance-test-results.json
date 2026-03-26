@@ -40,6 +40,22 @@
         "total_disbursements": 50,
         "is_manual_override": true,
         "updated_at": "2026-02-26T07:45:49.231593+00:00"
+      },
+      {
+        "id": "e7f5bfff-6dfb-4862-92aa-0a6aba816fca",
+        "cash_in_bank": 1000000,
+        "total_receipts": 364201.58,
+        "total_disbursements": 710932.43,
+        "is_manual_override": true,
+        "updated_at": "2026-02-26T07:47:09.541155+00:00"
+      },
+      {
+        "id": "47c1a72c-21f9-466d-a054-b0714ee051f8",
+        "cash_in_bank": 100,
+        "total_receipts": 200,
+        "total_disbursements": 50,
+        "is_manual_override": true,
+        "updated_at": "2026-03-02T05:25:56.086355+00:00"
       }
     ],
     "error": null
@@ -47,12 +63,12 @@
   "insert": {
     "data": [
       {
-        "id": "e7f5bfff-6dfb-4862-92aa-0a6aba816fca",
+        "id": "03817ae8-840c-4277-9d1e-fdd9a796495d",
         "cash_in_bank": 100,
         "total_receipts": 200,
         "total_disbursements": 50,
         "is_manual_override": true,
-        "updated_at": "2026-02-26T07:47:09.541155+00:00"
+        "updated_at": "2026-03-02T05:59:07.382008+00:00"
       }
     ],
     "error": null

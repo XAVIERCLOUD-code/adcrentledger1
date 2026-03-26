@@ -28,10 +28,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CashTransaction } from "@/data/types";
 import { useAppStore } from "@/data/useAppStore";
+import { useFinance, useAddCashTransaction, useUpdateCashTransaction, useDeleteCashTransaction, useUpdateFinanceTotals } from "@/data/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Finance() {
-    const { cashTransactions: transactions, financeTotals: totals, financeTotalsOverride, addCashTransaction, deleteCashTransaction, updateCashTransaction, updateFinanceTotals, user } = useAppStore();
+    const { user } = useAppStore();
+    const { data: financeData } = useFinance();
+    const transactions = financeData?.cashTransactions || [];
+    const totals = financeData?.totals || { cashInBank: 0, totalReceipts: 0, totalDisbursements: 0 };
+    const financeTotalsOverride = financeData?.override;
+
+    const addCashTransaction = useAddCashTransaction();
+    const deleteCashTransaction = useDeleteCashTransaction();
+    const updateCashTransaction = useUpdateCashTransaction();
+    const updateFinanceTotalsMutation = useUpdateFinanceTotals();
 
     const isAdmin = user?.role === 'admin';
 
@@ -56,7 +66,7 @@ export default function Finance() {
         const val = parseFloat(amount);
         if (!val || !date || !category || !description) return;
 
-        await addCashTransaction({
+        await addCashTransaction.mutateAsync({
             id: `cash-${Date.now()}`, // Will be overwritten by UUID in store, but good for typing if required
             date,
             type,
@@ -91,7 +101,7 @@ export default function Finance() {
         const val = parseFloat(amount);
         if (!val || !date || !category || !description) return;
 
-        await updateCashTransaction({
+        await updateCashTransaction.mutateAsync({
             ...editingTransaction,
             date,
             amount: val,
@@ -111,7 +121,7 @@ export default function Finance() {
 
     const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this transaction?")) {
-            await deleteCashTransaction(id);
+            await deleteCashTransaction.mutateAsync(id);
         }
     };
 
@@ -124,10 +134,13 @@ export default function Finance() {
 
     const handleSaveTotalsOverride = async () => {
         setIsEditTotalsModalOpen(false);
-        await updateFinanceTotals({
-            cash_in_bank: parseFloat(editCash) || 0,
-            total_receipts: parseFloat(editReceipts) || 0,
-            total_disbursements: parseFloat(editDisbursements) || 0
+        await updateFinanceTotalsMutation.mutateAsync({
+            totals: {
+                cash_in_bank: parseFloat(editCash) || 0,
+                total_receipts: parseFloat(editReceipts) || 0,
+                total_disbursements: parseFloat(editDisbursements) || 0
+            },
+            overrideId: financeTotalsOverride?.id
         });
     };
 

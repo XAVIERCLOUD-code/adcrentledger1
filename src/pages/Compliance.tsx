@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/data/useAppStore";
+import { useRequirements, useUpdateRequirement, useToggleRequirementStatus } from "@/data/queries/requirements";
 import ComplianceWidget from "@/components/ComplianceWidget";
 import { RenewComplianceModal } from "@/components/RenewComplianceModal";
 import { BuildingRequirement } from "@/data/types";
@@ -8,7 +9,10 @@ import { supabase } from "@/utils/supabaseClient";
 import { toast } from "sonner";
 
 const Compliance = () => {
-    const { requirements, updateRequirement, toggleRequirementStatus, user } = useAppStore();
+    const { user } = useAppStore();
+    const { data: requirements = [] } = useRequirements();
+    const updateRequirementMutation = useUpdateRequirement();
+    const toggleRequirementStatusMutation = useToggleRequirementStatus();
     const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
     const [selectedRequirement, setSelectedRequirement] = useState<BuildingRequirement | null>(null);
 
@@ -21,7 +25,7 @@ const Compliance = () => {
     };
 
     const handleConfirmRenew = async (updatedReq: BuildingRequirement) => {
-        await updateRequirement(updatedReq);
+        await updateRequirementMutation.mutateAsync(updatedReq);
         setIsRenewModalOpen(false);
         setSelectedRequirement(null);
     };
@@ -47,13 +51,14 @@ const Compliance = () => {
             ...req,
             documentUrl: undefined
         };
-        await updateRequirement(updatedReq);
+        await updateRequirementMutation.mutateAsync(updatedReq);
         toast.info("Document removed successfully.");
     };
 
     const handleToggle = async (id: string) => {
         console.log("Toggling ID:", id);
-        await toggleRequirementStatus(id);
+        const req = requirements.find(r => r.id === id);
+        await toggleRequirementStatusMutation.mutateAsync({ id, currentStatus: req?.status || 'Inactive' });
     };
 
     const isViewer = user?.role === 'viewer';

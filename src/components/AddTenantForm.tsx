@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tenant } from "@/data/types";
 import { useAppStore } from "@/data/useAppStore";
+import { useAddTenant } from "@/data/queries/tenants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,8 @@ interface AddTenantFormProps {
 }
 
 const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
-  const { addTenant, isLoading } = useAppStore();
+  const addTenantMutation = useAddTenant();
+  const isLoading = addTenantMutation.isPending;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [unit, setUnit] = useState("");
@@ -46,7 +48,7 @@ const AddTenantForm = ({ onAdded, onClose }: AddTenantFormProps) => {
       totalDue: rentAmount, // Default to gross rent
     };
 
-    await addTenant(tenant);
+    await addTenantMutation.mutateAsync(tenant);
     toast({ title: "Tenant added", description: `${tenant.name} has been added to Unit ${tenant.unit}.` });
     onAdded();
   };

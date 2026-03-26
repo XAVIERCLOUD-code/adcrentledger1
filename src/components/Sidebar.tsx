@@ -4,6 +4,7 @@ import { LayoutDashboard, FileCheck2, CalendarDays, LogOut, User, Users, Wallet 
 import { ModeToggle } from "./ModeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { useAppStore } from "@/data/useAppStore";
+import { useRequirements } from "@/data/queries/requirements";
 
 interface SidebarContentProps {
     onNavigate?: () => void;
@@ -11,7 +12,8 @@ interface SidebarContentProps {
 
 export const SidebarContent = ({ onNavigate }: SidebarContentProps) => {
     const location = useLocation();
-    const { requirements, user, logout } = useAppStore();
+    const { user, logout } = useAppStore();
+    const { data: requirements = [] } = useRequirements();
 
     const handleLogout = () => {
         logout();
