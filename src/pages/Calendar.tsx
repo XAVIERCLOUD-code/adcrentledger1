@@ -93,27 +93,27 @@ const Calendar = () => {
     return (
         <div className="h-full flex flex-col space-y-4 animate-fade-in p-2 md:p-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        <CalendarIcon className="h-6 w-6" />
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2 mr-2">
+                        <CalendarIcon className="h-5 w-5 text-primary" />
                         Company Calendar
                     </h1>
                     <div className="flex items-center rounded-md border bg-background shadow-sm">
                         <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8">
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <span className="min-w-[120px] text-center font-semibold">
+                        <span className="min-w-[110px] text-xs md:text-sm text-center font-semibold">
                             {format(currentDate, "MMMM yyyy")}
                         </span>
                         <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8">
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
+                    <Button variant="outline" size="sm" onClick={goToToday} className="h-8 text-xs">Today</Button>
                 </div>
                 {!isViewer && (
-                    <Button onClick={() => { setSelectedDate(new Date()); setShowAddDialog(true); }}>
+                    <Button onClick={() => { setSelectedDate(new Date()); setShowAddDialog(true); }} className="w-full sm:w-auto h-8 text-xs md:text-sm shadow-lg shadow-primary/10">
                         <Plus className="mr-2 h-4 w-4" /> Add Event
                     </Button>
                 )}

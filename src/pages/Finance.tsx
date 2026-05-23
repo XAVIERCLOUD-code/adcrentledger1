@@ -146,22 +146,22 @@ export default function Finance() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Finance & Ledger</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Finance & Ledger</h1>
+                    <p className="text-muted-foreground mt-1 md:mt-2 text-sm">
                         Track cash receipts, disbursements, and monitor your cash in bank.
                     </p>
                 </div>
                 {isAdmin && (
-                    <div className="flex gap-2">
-                        <Button onClick={handleOpenEditTotals} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto shrink-0">
+                        <Button onClick={handleOpenEditTotals} variant="outline" className="border-primary text-primary hover:bg-primary/10 flex-1 md:flex-none h-9 text-xs md:text-sm">
                             <Edit className="mr-2 h-4 w-4" /> Override Totals
                         </Button>
-                        <Button onClick={() => setIsReceiptModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
+                        <Button onClick={() => setIsReceiptModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 flex-1 md:flex-none h-9 text-xs md:text-sm">
                             <Plus className="mr-2 h-4 w-4" /> Add Receipt
                         </Button>
-                        <Button onClick={() => setIsDisbursementModalOpen(true)} variant="destructive">
+                        <Button onClick={() => setIsDisbursementModalOpen(true)} variant="destructive" className="flex-1 md:flex-none h-9 text-xs md:text-sm">
                             <Plus className="mr-2 h-4 w-4" /> Add Disbursement
                         </Button>
                     </div>
@@ -208,55 +208,106 @@ export default function Finance() {
             </div>
 
             {isAdmin && (
-                <div className="rounded-md border bg-card">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Ref No.</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedTransactions.length === 0 ? (
+                <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-md border bg-card overflow-hidden">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
-                                        No transactions found.
-                                    </TableCell>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead>Description</TableHead>
+                                    <TableHead>Ref No.</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
-                            ) : (
-                                sortedTransactions.map((t) => (
-                                    <TableRow key={t.id}>
-                                        <TableCell>{formatDate(t.date)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={t.type === 'receipt' ? 'default' : 'destructive'} className={t.type === 'receipt' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : ''}>
-                                                {t.type === 'receipt' ? 'Receipt' : 'Disbursement'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{t.category}</TableCell>
-                                        <TableCell>{t.description}</TableCell>
-                                        <TableCell className="text-muted-foreground">{t.referenceNo || '-'}</TableCell>
-                                        <TableCell className={`text-right font-medium ${t.type === 'receipt' ? 'text-emerald-500' : 'text-destructive'}`}>
-                                            {t.type === 'receipt' ? '+' : '-'}{formatCurrency(t.amount)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(t)}>
-                                                <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
-                                                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                            </Button>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedTransactions.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
+                                            No transactions found.
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                ) : (
+                                    sortedTransactions.map((t) => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{formatDate(t.date)}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={t.type === 'receipt' ? 'default' : 'destructive'} className={t.type === 'receipt' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : ''}>
+                                                    {t.type === 'receipt' ? 'Receipt' : 'Disbursement'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{t.category}</TableCell>
+                                            <TableCell>{t.description}</TableCell>
+                                            <TableCell className="text-muted-foreground">{t.referenceNo || '-'}</TableCell>
+                                            <TableCell className={`text-right font-medium ${t.type === 'receipt' ? 'text-emerald-500' : 'text-destructive'}`}>
+                                                {t.type === 'receipt' ? '+' : '-'}{formatCurrency(t.amount)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(t)}>
+                                                    <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
+                                                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Mobile Card List View */}
+                    <div className="md:hidden space-y-4">
+                        {sortedTransactions.length === 0 ? (
+                            <div className="text-center py-12 rounded-md border border-dashed bg-card text-muted-foreground text-sm">
+                                No transactions found.
+                            </div>
+                        ) : (
+                            <div className="rounded-md border bg-card divide-y divide-border/50 overflow-hidden">
+                                {sortedTransactions.map((t) => (
+                                    <div key={t.id} className="p-4 space-y-2 hover:bg-muted/5 transition-colors">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={t.type === 'receipt' ? 'default' : 'destructive'} className={t.type === 'receipt' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 px-2 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[10px]'}>
+                                                    {t.type === 'receipt' ? 'Receipt' : 'Disbursement'}
+                                                </Badge>
+                                                <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
+                                            </div>
+                                            <span className={`font-mono font-bold text-base ${t.type === 'receipt' ? 'text-emerald-500' : 'text-destructive'}`}>
+                                                {t.type === 'receipt' ? '+' : '-'}{formatCurrency(t.amount)}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-start justify-between gap-4 pt-1">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-foreground truncate">{t.category}</p>
+                                                <p className="text-xs text-muted-foreground truncate mt-0.5">{t.description}</p>
+                                                {t.referenceNo && (
+                                                    <p className="text-[10px] text-muted-foreground/85 mt-1.5 font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
+                                                        Ref: {t.referenceNo}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(t)} className="h-8 w-8 text-muted-foreground hover:text-primary rounded-full">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-full">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </>
             )}
 
             {isAdmin && (

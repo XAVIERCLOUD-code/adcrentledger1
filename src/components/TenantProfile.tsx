@@ -150,12 +150,12 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   return (
     <div className="space-y-6 animate-fade-in pb-20 p-2 md:p-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-muted/80 shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground truncate">{tenant.name}</h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-md bg-secondary/50 px-2 py-0.5 text-xs font-medium text-secondary-foreground border border-border">
@@ -165,12 +165,12 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
               <span className="text-sm">Tenant Profile</span>
             </p>
           </div>
-          {!isViewer && (
-            <Button onClick={() => setShowBillingForm(true)} className="gap-2 shadow-lg shadow-primary/20 w-full md:w-auto">
-              <Plus className="h-4 w-4" /> New Bill
-            </Button>
-          )}
         </div>
+        {!isViewer && (
+          <Button onClick={() => setShowBillingForm(true)} className="gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
+            <Plus className="h-4 w-4" /> New Bill
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-4">
@@ -388,7 +388,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
         </div>
 
         {/* Right Column: Billing History */}
-        <div className="lg:col-span-2 xl:col-span-3">
+        <div className="lg:col-span-2 xl:col-span-3 min-w-0">
           <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-full flex flex-col">
             <div className="p-4 md:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card-header">
               <div className="flex items-center gap-2">
@@ -424,77 +424,138 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
                   <p>No billing records found for this period.</p>
                 </div>
               ) : (
-                <div className="md:min-w-0 min-w-[800px] inline-block w-full align-middle">
-                  <table className="w-full text-sm whitespace-nowrap">
-                    <thead className="bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <tr>
-                        <th className="px-4 md:px-6 py-3 text-left">Period</th>
-                        <th className="px-4 md:px-6 py-3 text-right">Amount</th>
-                        <th className="px-4 md:px-6 py-3 text-center">Status</th>
-                        <th className="px-4 md:px-6 py-3 text-center">Breakdown</th>
-                        {!isViewer && <th className="px-4 md:px-6 py-3 text-right">Actions</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50">
-                      {filteredBills.map((bill) => (
-                        <tr key={bill.id} className="group hover:bg-muted/20 transition-colors">
-                          <td className="px-4 md:px-6 py-4 font-medium">
-                            {bill.month}
-                            {bill.paidDate && (
-                              <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                Paid {bill.paidDate}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 md:px-6 py-4 text-right font-mono font-bold">
-                            ₱{bill.totalBill.toLocaleString()}
-                          </td>
-                          <td className="px-4 md:px-6 py-4 text-center">
-                            <div className="flex justify-center">
-                              <StatusBadge isPaid={bill.isPaid} />
-                            </div>
-                          </td>
-                          <td className="px-4 md:px-6 py-4">
-                            <div className="flex justify-center">
-                              <BillTypeIndicators bill={bill} />
-                            </div>
-                          </td>
-                          {!isViewer && (
-                            <td className="px-4 md:px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-3">
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={bill.isPaid}
-                                    onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
-                                    className="scale-75 data-[state=checked]:bg-emerald-500"
-                                  />
-                                  <Label className="text-xs text-muted-foreground font-normal">
-                                    {bill.isPaid ? "Paid" : "Unpaid"}
-                                  </Label>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block md:min-w-0 min-w-[800px] w-full align-middle">
+                    <table className="w-full text-sm whitespace-nowrap">
+                      <thead className="bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <tr>
+                          <th className="px-4 md:px-6 py-3 text-left">Period</th>
+                          <th className="px-4 md:px-6 py-3 text-right">Amount</th>
+                          <th className="px-4 md:px-6 py-3 text-center">Status</th>
+                          <th className="px-4 md:px-6 py-3 text-center">Breakdown</th>
+                          {!isViewer && <th className="px-4 md:px-6 py-3 text-right">Actions</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        {filteredBills.map((bill) => (
+                          <tr key={bill.id} className="group hover:bg-muted/20 transition-colors">
+                            <td className="px-4 md:px-6 py-4 font-medium">
+                              {bill.month}
+                              {bill.paidDate && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                  Paid {bill.paidDate}
                                 </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 text-xs gap-1 ml-2 border-dashed"
-                                  onClick={() => handleNotify(bill)}
-                                  disabled={!!loadingEmail}
-                                >
-                                  {loadingEmail === bill.id ? (
-                                    <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
-                                  ) : (
-                                    <Bell className="h-3 w-3" />
-                                  )}
-                                  Notify
-                                </Button>
+                              )}
+                            </td>
+                            <td className="px-4 md:px-6 py-4 text-right font-mono font-bold">
+                              ₱{bill.totalBill.toLocaleString()}
+                            </td>
+                            <td className="px-4 md:px-6 py-4 text-center">
+                              <div className="flex justify-center">
+                                <StatusBadge isPaid={bill.isPaid} />
                               </div>
                             </td>
+                            <td className="px-4 md:px-6 py-4">
+                              <div className="flex justify-center">
+                                <BillTypeIndicators bill={bill} />
+                              </div>
+                            </td>
+                            {!isViewer && (
+                              <td className="px-4 md:px-6 py-4 text-right">
+                                <div className="flex items-center justify-end gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <Switch
+                                      checked={bill.isPaid}
+                                      onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
+                                      className="scale-75 data-[state=checked]:bg-emerald-500"
+                                    />
+                                    <Label className="text-xs text-muted-foreground font-normal">
+                                      {bill.isPaid ? "Paid" : "Unpaid"}
+                                    </Label>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs gap-1 ml-2 border-dashed"
+                                    onClick={() => handleNotify(bill)}
+                                    disabled={!!loadingEmail}
+                                  >
+                                    {loadingEmail === bill.id ? (
+                                      <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                    ) : (
+                                      <Bell className="h-3 w-3" />
+                                    )}
+                                    Notify
+                                  </Button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card List View */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {filteredBills.map((bill) => (
+                      <div key={bill.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-base text-foreground">{bill.month}</p>
+                            {bill.paidDate && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                Paid {bill.paidDate}
+                              </p>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-base text-foreground">
+                            ₱{bill.totalBill.toLocaleString()}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-2">
+                            <StatusBadge isPaid={bill.isPaid} />
+                            <BillTypeIndicators bill={bill} />
+                          </div>
+
+                          {!isViewer && (
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <Switch
+                                  checked={bill.isPaid}
+                                  onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
+                                  className="scale-75 data-[state=checked]:bg-emerald-500"
+                                />
+                                <span className="text-[11px] text-muted-foreground">
+                                  {bill.isPaid ? "Paid" : "Unpaid"}
+                                </span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-xs gap-1 border-dashed"
+                                onClick={() => handleNotify(bill)}
+                                disabled={!!loadingEmail}
+                              >
+                                {loadingEmail === bill.id ? (
+                                  <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                ) : (
+                                  <Bell className="h-3 w-3" />
+                                )}
+                                Notify
+                              </Button>
+                            </div>
                           )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
