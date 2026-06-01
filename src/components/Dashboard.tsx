@@ -187,6 +187,13 @@ const Dashboard = () => {
     const ewt = Math.round((rentNet * (ewtPercent / 100)) * 100) / 100;
     
     let nextEscalationDetails = tenant.escalationDetails || "";
+    let escalationMonth = "";
+    
+    const escalationInfo = getNextEscalation(tenant);
+    if (escalationInfo) {
+      escalationMonth = escalationInfo.nextMonth;
+    }
+    
     const yearMatch = nextEscalationDetails.match(/\b(202\d)\b/);
     if (yearMatch) {
       const currentYearVal = parseInt(yearMatch[1], 10);
@@ -206,10 +213,29 @@ const Dashboard = () => {
     };
 
     try {
+      // 1. Update Tenant Profile
       await updateTenantMutation.mutateAsync(updatedTenant);
+      
+      // 2. Retrospectively update any existing bills generated since the escalation month
+      if (escalationMonth) {
+        const { supabase } = await import("@/utils/supabaseClient");
+        const { error: billsError } = await supabase
+          .from('bills')
+          .update({
+            rent: nextRentGross,
+            totalBill: nextRentGross
+          })
+          .eq('tenantId', tenant.id)
+          .gte('month', escalationMonth);
+
+        if (billsError) {
+          console.error("Error updating retrospective bills:", billsError);
+        }
+      }
+      
       toast({ 
-        title: "Rent Escalated!", 
-        description: `Rent for ${tenant.name} increased to ₱${nextRentGross.toLocaleString()} and taxes recalculated. Next escalation scheduled: ${nextEscalationDetails}.` 
+        title: "Rent Escalated & Bills Corrected!", 
+        description: `Rent for ${tenant.name} increased to ₱${nextRentGross.toLocaleString()} and past bills starting from ${escalationMonth} have been automatically corrected.` 
       });
     } catch (err: any) {
       toast({ 
