@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { Tenant, BillRecord } from "@/data/types";
-import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter, TrendingUp } from "lucide-react";
+import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter, TrendingUp, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/data/useAppStore";
-import { useBills, useToggleBillPaid } from "@/data/queries/bills";
+import { useBills, useToggleBillPaid, useUpdateBill, useRemoveBill } from "@/data/queries/bills";
 import { useUpdateTenant } from "@/data/queries/tenants";
 import StatusBadge, { BillTypeIndicators } from "./StatusBadge";
 import BillingForm from "./BillingForm";
@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { sendTenantNotification, EmailTemplateParams } from "@/utils/emailService";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -99,6 +100,8 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   const { data: bills = [] } = useBills();
   const updateTenantMutation = useUpdateTenant();
   const toggleBillPaidMutation = useToggleBillPaid();
+  const updateBillMutation = useUpdateBill();
+  const removeBillMutation = useRemoveBill();
 
   // Filter bills just for this tenant
   const tenantBills = useMemo(() =>
@@ -122,6 +125,13 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
   const [editEscalationDetails, setEditEscalationDetails] = useState(tenant.escalationDetails || "");
   const [editVat, setEditVat] = useState(tenant.vatPercent?.toString() || "");
   const [editEwt, setEditEwt] = useState(tenant.ewtPercent?.toString() || "");
+
+  // Edit Bill State
+  const [editingBill, setEditingBill] = useState<BillRecord | null>(null);
+  const [editBillAmount, setEditBillAmount] = useState("");
+  const [editBillMonth, setEditBillMonth] = useState("");
+  const [editBillElectric, setEditBillElectric] = useState("");
+  const [editBillWater, setEditBillWater] = useState("");
 
   // Year Filter State
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -274,6 +284,52 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
         description: err.message, 
         variant: "destructive" 
       });
+    }
+  };
+
+  const handleStartEditBill = (bill: BillRecord) => {
+    setEditingBill(bill);
+    setEditBillAmount(bill.totalBill.toString());
+    setEditBillMonth(bill.month);
+    setEditBillElectric(bill.electricBill?.toString() || "");
+    setEditBillWater(bill.waterBill?.toString() || "");
+  };
+
+  const handleSaveBill = async () => {
+    if (!editingBill) return;
+
+    const amt = parseFloat(editBillAmount);
+    if (isNaN(amt) || amt < 0) {
+      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+      return;
+    }
+
+    const updatedBill: BillRecord = {
+      ...editingBill,
+      month: editBillMonth,
+      totalBill: amt,
+      rent: editingBill.rent ? amt : undefined,
+      electricBill: editBillElectric ? parseFloat(editBillElectric) : undefined,
+      waterBill: editBillWater ? parseFloat(editBillWater) : undefined,
+    };
+
+    try {
+      await updateBillMutation.mutateAsync(updatedBill);
+      toast({ title: "Bill Updated", description: `Billing record for ${editBillMonth} has been updated.` });
+      setEditingBill(null);
+    } catch (err: any) {
+      toast({ title: "Error Updating Bill", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteBill = async (billId: string) => {
+    if (confirm("Are you sure you want to permanently delete this bill?")) {
+      try {
+        await removeBillMutation.mutateAsync(billId);
+        toast({ title: "Bill Deleted", description: "The billing record has been removed." });
+      } catch (err: any) {
+        toast({ title: "Error Deleting Bill", description: err.message, variant: "destructive" });
+      }
     }
   };
 
@@ -678,6 +734,24 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
                                     )}
                                     Notify
                                   </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleStartEditBill(bill)}
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary rounded-full shrink-0"
+                                    title="Edit bill"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteBill(bill.id)}
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-full shrink-0"
+                                    title="Delete bill"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </td>
                             )}
@@ -686,7 +760,7 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
                       </tbody>
                     </table>
                   </div>
-
+ 
                   {/* Mobile Card List View */}
                   <div className="md:hidden divide-y divide-border/50">
                     {filteredBills.map((bill) => (
@@ -705,16 +779,16 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
                             ₱{bill.totalBill.toLocaleString()}
                           </div>
                         </div>
-
+ 
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-2">
                             <StatusBadge isPaid={bill.isPaid} />
                             <BillTypeIndicators bill={bill} />
                           </div>
-
+ 
                           {!isViewer && (
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
                                 <Switch
                                   checked={bill.isPaid}
                                   onCheckedChange={(checked) => handleTogglePaid(bill.id, checked)}
@@ -738,6 +812,24 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
                                 )}
                                 Notify
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleStartEditBill(bill)}
+                                className="h-7 w-7 text-muted-foreground hover:text-primary rounded-full shrink-0"
+                                title="Edit bill"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteBill(bill.id)}
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-full shrink-0"
+                                title="Delete bill"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -758,6 +850,72 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
           onCancel={() => setShowBillingForm(false)}
         />
       )}
+
+      {/* Edit Bill Modal Dialog */}
+      <Dialog open={!!editingBill} onOpenChange={(open) => !open && setEditingBill(null)}>
+        <DialogContent className="max-w-md bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle>Edit Bill Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-bill-month" className="text-xs text-muted-foreground">Billing Month</Label>
+              <Input
+                id="edit-bill-month"
+                type="month"
+                value={editBillMonth}
+                onChange={(e) => setEditBillMonth(e.target.value)}
+                className="font-mono text-sm h-9 bg-background"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-bill-amount" className="text-xs text-muted-foreground">Total Amount Due (₱)</Label>
+              <Input
+                id="edit-bill-amount"
+                type="number"
+                step="0.01"
+                value={editBillAmount}
+                onChange={(e) => setEditBillAmount(e.target.value)}
+                className="font-mono text-sm h-9 bg-background"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-bill-electric" className="text-xs text-muted-foreground">Electric Fee (₱)</Label>
+                <Input
+                  id="edit-bill-electric"
+                  type="number"
+                  step="0.01"
+                  value={editBillElectric}
+                  onChange={(e) => setEditBillElectric(e.target.value)}
+                  placeholder="0.00"
+                  className="font-mono text-sm h-9 bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-bill-water" className="text-xs text-muted-foreground">Water Fee (₱)</Label>
+                <Input
+                  id="edit-bill-water"
+                  type="number"
+                  step="0.01"
+                  value={editBillWater}
+                  onChange={(e) => setEditBillWater(e.target.value)}
+                  placeholder="0.00"
+                  className="font-mono text-sm h-9 bg-background"
+                />
+              </div>
+            </div>
+            <div className="pt-4 flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setEditingBill(null)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSaveBill} disabled={updateBillMutation.isPending}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

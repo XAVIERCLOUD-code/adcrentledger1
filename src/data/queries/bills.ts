@@ -50,3 +50,39 @@ export function useToggleBillPaid() {
         },
     });
 }
+
+export function useUpdateBill() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (updatedBill: BillRecord) => {
+            const { error } = await supabase
+                .from('bills')
+                .update(updatedBill)
+                .eq('id', updatedBill.id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: billKeys.all });
+        },
+    });
+}
+
+export function useRemoveBill() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('bills')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: billKeys.all });
+        },
+    });
+}
