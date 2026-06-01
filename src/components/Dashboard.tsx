@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAppStore } from "@/data/useAppStore";
-import { useTenants, useRemoveTenant } from "@/data/queries/tenants";
+import { useTenants, useRemoveTenant, useUpdateTenant } from "@/data/queries/tenants";
 import { useBills } from "@/data/queries/bills";
 import { useRequirements } from "@/data/queries/requirements";
 import { Tenant } from "@/data/types";
@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, Download, Users, AlertTriangle, UserPlus, Trash2, ArrowUpRight, CalendarClock } from "lucide-react";
+import { Building2, Download, Users, AlertTriangle, UserPlus, Trash2, ArrowUpRight, CalendarClock, TrendingUp, Sparkles } from "lucide-react";
 import { exportToCSV } from "@/utils/export";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -33,9 +33,78 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const floorOptions = [0, 1, 2, 3] as const;
 const floorLabels: Record<number, string> = { 0: "All Floors", 1: "1st Floor", 2: "2nd Floor", 3: "3rd Floor" };
+
+// Generic rent escalation calculation utility
+function getNextEscalation(tenant: Tenant): { nextMonth: string; rate: number; suggestedRent: number; isDue: boolean } | null {
+  if (!tenant.escalationRate || !tenant.rentGross) return null;
+
+  const details = tenant.escalationDetails || "";
+  const monthsMap: { [key: string]: string } = {
+    january: "01", feb: "02", february: "02", mar: "03", march: "03", apr: "04", april: "04",
+    may: "05", jun: "06", june: "06", jul: "07", july: "07", aug: "08", august: "08",
+    sep: "09", september: "09", oct: "10", october: "10", nov: "11", november: "11", dec: "12", december: "12"
+  };
+
+  let year: number | null = null;
+  let monthStr: string | null = null;
+
+  // 1. Search for 4 digit year inside details (e.g. 2025, 2026)
+  const yearMatch = details.match(/\b(202\d)\b/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[1], 10);
+  }
+
+  // 2. Search for month name in details
+  for (const mName of Object.keys(monthsMap)) {
+    const regex = new RegExp(`\\b${mName}\\b`, "i");
+    if (regex.test(details)) {
+      monthStr = monthsMap[mName];
+      break;
+    }
+  }
+
+  // 3. Fallback to anniversary of lease start if no date found in details
+  if (!year || !monthStr) {
+    if (tenant.leaseStart) {
+      const leaseStartDate = new Date(tenant.leaseStart);
+      if (!isNaN(leaseStartDate.getTime())) {
+        const today = new Date();
+        const startMonth = leaseStartDate.getMonth(); // 0-indexed
+        monthStr = String(startMonth + 1).padStart(2, "0");
+        
+        const currentMonthVal = today.getMonth() + 1;
+        const targetMonthVal = startMonth + 1;
+        
+        if (currentMonthVal >= targetMonthVal) {
+          year = today.getFullYear();
+        } else {
+          year = today.getFullYear() - 1;
+        }
+      }
+    }
+  }
+
+  if (!year || !monthStr) return null;
+
+  const nextMonth = `${year}-${monthStr}`;
+  const today = new Date();
+  const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
+  
+  const isDue = currentMonth >= nextMonth;
+  const rate = tenant.escalationRate;
+  const suggestedRent = Math.round((tenant.rentGross * (1 + rate / 100)) * 100) / 100;
+
+  return {
+    nextMonth,
+    rate,
+    suggestedRent,
+    isDue
+  };
+}
 
 const Dashboard = () => {
   const { user } = useAppStore();
@@ -43,6 +112,7 @@ const Dashboard = () => {
   const { data: bills = [], isLoading: isBillsLoading } = useBills();
   const { data: requirements = [], isLoading: isReqLoading } = useRequirements();
   const removeTenantMutation = useRemoveTenant();
+  const updateTenantMutation = useUpdateTenant();
 
   const isLoading = isTenantsLoading || isBillsLoading || isReqLoading;
 
@@ -103,6 +173,51 @@ const Dashboard = () => {
     await removeTenantMutation.mutateAsync(tenantToRemove.id);
     toast({ title: "Tenant removed", description: `${tenantToRemove.name} and all their billing records have been removed.` });
     setTenantToRemove(null);
+  };
+
+  const handleApplyEscalation = async (tenant: Tenant, suggestedRent: number) => {
+    const rate = tenant.escalationRate || 5;
+    const nextRentGross = suggestedRent;
+    
+    const vatPercent = tenant.vatPercent || 12;
+    const ewtPercent = tenant.ewtPercent || 5;
+    
+    const rentNet = Math.round((nextRentGross / (1 + vatPercent / 100)) * 100) / 100;
+    const vat = Math.round((rentNet * (vatPercent / 100)) * 100) / 100;
+    const ewt = Math.round((rentNet * (ewtPercent / 100)) * 100) / 100;
+    
+    let nextEscalationDetails = tenant.escalationDetails || "";
+    const yearMatch = nextEscalationDetails.match(/\b(202\d)\b/);
+    if (yearMatch) {
+      const currentYearVal = parseInt(yearMatch[1], 10);
+      nextEscalationDetails = nextEscalationDetails.replace(yearMatch[1], String(currentYearVal + 1));
+    } else {
+      nextEscalationDetails = `${rate}% starting March ${new Date().getFullYear() + 1}`;
+    }
+    
+    const updatedTenant = {
+      ...tenant,
+      rentGross: nextRentGross,
+      totalDue: nextRentGross,
+      rentNet,
+      vat,
+      ewt,
+      escalationDetails: nextEscalationDetails
+    };
+
+    try {
+      await updateTenantMutation.mutateAsync(updatedTenant);
+      toast({ 
+        title: "Rent Escalated!", 
+        description: `Rent for ${tenant.name} increased to ₱${nextRentGross.toLocaleString()} and taxes recalculated. Next escalation scheduled: ${nextEscalationDetails}.` 
+      });
+    } catch (err: any) {
+      toast({ 
+        title: "Error Applying Escalation", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    }
   };
 
   if (isLoading && tenants.length === 0) {
@@ -203,56 +318,67 @@ const Dashboard = () => {
 
       {/* Escalation Alert */}
       {!isViewer && (() => {
-        const today = new Date();
-        const currentYear = today.getFullYear();
-
-        const escalatingTenants = tenants.filter(t => {
-          if (!t.leaseStart || !t.escalationDetails || t.escalationDetails.toLowerCase() === "none") return false;
-
-          const leaseStart = new Date(t.leaseStart);
-          const yearsActive = currentYear - leaseStart.getFullYear();
-
-          if (yearsActive < 3) return false;
-
-          // Target anniversary for the current year
-          const anniversaryDate = new Date(currentYear, leaseStart.getMonth(), leaseStart.getDate());
-
-          // Calculate difference in days between today and anniversary
-          const diffTime = anniversaryDate.getTime() - today.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          // Trigger alert 30 days BEFORE the anniversary
-          return diffDays >= 0 && diffDays <= 30;
-        });
+        const escalatingTenants = tenants.map(t => {
+          const escalation = getNextEscalation(t);
+          return escalation && escalation.isDue ? { tenant: t, escalation } : null;
+        }).filter(Boolean) as { tenant: Tenant; escalation: { nextMonth: string; rate: number; suggestedRent: number; isDue: boolean } }[];
 
         if (escalatingTenants.length === 0) return null;
 
         return (
-          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 text-blue-400 shadow-sm flex items-start gap-4 hover:bg-blue-500/10 transition-colors">
-            <div className="p-2 bg-blue-500/20 rounded-full shrink-0">
-              <CalendarClock className="h-5 w-5 text-blue-400" />
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-amber-400 shadow-sm flex items-start gap-4 hover:bg-amber-500/10 transition-colors animate-pulse-glow">
+            <div className="p-2 bg-amber-500/20 rounded-full shrink-0">
+              <CalendarClock className="h-5 w-5 text-amber-400" />
             </div>
             <div className="space-y-2 w-full">
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-blue-300">
-                Rent Escalation Reminder
-                <span className="text-xs font-medium bg-blue-500/20 px-2 py-0.5 rounded-full text-blue-300 border border-blue-500/30">
-                  {escalatingTenants.length} upcoming
+              <h3 className="font-semibold text-lg flex items-center gap-2 text-amber-300">
+                🔔 Rent Escalation Due!
+                <span className="text-xs font-medium bg-amber-500/20 px-2 py-0.5 rounded-full text-amber-300 border border-amber-500/30">
+                  {escalatingTenants.length} tenant(s)
                 </span>
               </h3>
-              <p className="text-sm opacity-90">
-                The following tenants are approaching their contract anniversary and may be due for a rent increase:
+              <p className="text-sm opacity-90 text-muted-foreground">
+                The following tenants are currently due or past due for their rent escalation. Recalculate their rents instantly:
               </p>
-              <div className="grid gap-2 mt-2">
-                {escalatingTenants.map(t => {
-                  const anniv = new Date(currentYear, new Date(t.leaseStart!).getMonth(), new Date(t.leaseStart!).getDate());
+              <div className="grid gap-3 mt-3">
+                {escalatingTenants.map(({ tenant: t, escalation: esc }) => {
+                  const [yearStr, monthStr] = esc.nextMonth.split('-');
+                  const monthsNames: { [key: string]: string } = {
+                    "01": "January", "02": "February", "03": "March", "04": "April",
+                    "05": "May", "06": "June", "07": "July", "08": "August",
+                    "09": "September", "10": "October", "11": "November", "12": "December"
+                  };
+                  const monthName = monthsNames[monthStr] || monthStr;
+                  const formattedMonth = `${monthName} ${yearStr}`;
                   return (
-                    <div key={t.id} className="bg-background/40 backdrop-blur-sm p-3 rounded-lg border border-border/50 flex justify-between items-center text-sm">
+                    <div key={t.id} className="bg-background/40 backdrop-blur-sm p-4 rounded-xl border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm hover:border-amber-500/30 transition-all duration-300">
                       <div className="flex flex-col">
-                        <span className="font-bold text-foreground">{t.name} <span className="text-muted-foreground font-normal">({t.unit})</span></span>
-                        <span className="text-muted-foreground text-xs mt-0.5">Anniversary: <span className="text-blue-400 font-medium">{anniv.toDateString()}</span></span>
+                        <span className="font-bold text-foreground text-base">{t.name} <span className="text-muted-foreground font-normal text-sm">({t.unit})</span></span>
+                        <span className="text-muted-foreground text-xs mt-0.5 flex items-center gap-1.5">
+                          <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
+                          Escalation of <span className="font-bold text-amber-400">{esc.rate}%</span> due: <span className="font-semibold text-foreground bg-muted/50 px-1.5 py-0.5 rounded">{formattedMonth}</span>
+                        </span>
+                        <span className="font-mono text-xs mt-1.5 text-muted-foreground">
+                          Current Rent: ₱{t.rentGross.toLocaleString(undefined, { minimumFractionDigits: 2 })} → Suggested Rent: <span className="font-bold text-emerald-400">₱{esc.suggestedRent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </span>
                       </div>
-                      <div className="bg-blue-500/10 px-3 py-1.5 rounded-md text-blue-300 border border-blue-500/20 text-xs font-medium text-right max-w-[200px] truncate" title={t.escalationDetails}>
-                        {t.escalationDetails}
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSelectedTenant(t)}
+                          className="h-8 text-xs border-dashed flex-1 sm:flex-none"
+                        >
+                          View Profile
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleApplyEscalation(t, esc.suggestedRent)} 
+                          className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold flex-1 sm:flex-none"
+                          disabled={updateTenantMutation.isPending}
+                        >
+                          Apply {esc.rate}%
+                        </Button>
                       </div>
                     </div>
                   );
