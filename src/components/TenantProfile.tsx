@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Tenant, BillRecord } from "@/data/types";
-import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter } from "lucide-react";
+import { ArrowLeft, User, MapPin, Mail, Phone, Plus, History, Bell, Receipt, CheckCircle2, AlertCircle, Edit, Filter, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/data/useAppStore";
 import { useBills, useToggleBillPaid } from "@/data/queries/bills";
 import { useUpdateTenant } from "@/data/queries/tenants";
@@ -20,10 +21,77 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 interface TenantProfileProps {
   tenant: Tenant;
   onBack: () => void;
+}
+
+// Robust helper function to calculate escalation status
+function getNextEscalation(tenant: Tenant): { nextMonth: string; rate: number; suggestedRent: number; isDue: boolean } | null {
+  if (!tenant.escalationRate || !tenant.rentGross) return null;
+
+  const details = tenant.escalationDetails || "";
+  const monthsMap: { [key: string]: string } = {
+    january: "01", feb: "02", february: "02", mar: "03", march: "03", apr: "04", april: "04",
+    may: "05", jun: "06", june: "06", jul: "07", july: "07", aug: "08", august: "08",
+    sep: "09", september: "09", oct: "10", october: "10", nov: "11", november: "11", dec: "12", december: "12"
+  };
+
+  let year: number | null = null;
+  let monthStr: string | null = null;
+
+  // 1. Search for 4 digit year inside details (e.g. 2025, 2026)
+  const yearMatch = details.match(/\b(202\d)\b/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[1], 10);
+  }
+
+  // 2. Search for month name in details
+  for (const mName of Object.keys(monthsMap)) {
+    const regex = new RegExp(`\\b${mName}\\b`, "i");
+    if (regex.test(details)) {
+      monthStr = monthsMap[mName];
+      break;
+    }
+  }
+
+  // 3. Fallback to anniversary of lease start if no date found in details
+  if (!year || !monthStr) {
+    if (tenant.leaseStart) {
+      const leaseStartDate = new Date(tenant.leaseStart);
+      if (!isNaN(leaseStartDate.getTime())) {
+        const today = new Date();
+        const startMonth = leaseStartDate.getMonth(); // 0-indexed
+        monthStr = String(startMonth + 1).padStart(2, "0");
+        
+        const currentMonthVal = today.getMonth() + 1;
+        const targetMonthVal = startMonth + 1;
+        
+        if (currentMonthVal >= targetMonthVal) {
+          year = today.getFullYear();
+        } else {
+          year = today.getFullYear() - 1;
+        }
+      }
+    }
+  }
+
+  if (!year || !monthStr) return null;
+
+  const nextMonth = `${year}-${monthStr}`;
+  const today = new Date();
+  const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
+  
+  const isDue = currentMonth >= nextMonth;
+  const rate = tenant.escalationRate;
+  const suggestedRent = Math.round((tenant.rentGross * (1 + rate / 100)) * 100) / 100;
+
+  return {
+    nextMonth,
+    rate,
+    suggestedRent,
+    isDue
+  };
 }
 
 const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
@@ -134,6 +202,53 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
     await toggleBillPaidMutation.mutateAsync({ billId, isPaid: newIsPaid });
     const statusText = newIsPaid ? "Paid" : "Unpaid";
     toast({ title: "Status Updated", description: `Bill marked as ${statusText}` });
+  };
+
+  const handleApplyEscalation = async (suggestedRent: number) => {
+    const rate = tenant.escalationRate || 5;
+    const nextRentGross = suggestedRent;
+    
+    const vatPercent = tenant.vatPercent || 12;
+    const ewtPercent = tenant.ewtPercent || 5;
+    
+    const rentNet = Math.round((nextRentGross / (1 + vatPercent / 100)) * 100) / 100;
+    const vat = Math.round((rentNet * (vatPercent / 100)) * 100) / 100;
+    const ewt = Math.round((rentNet * (ewtPercent / 100)) * 100) / 100;
+    
+    let nextEscalationDetails = tenant.escalationDetails || "";
+    const yearMatch = nextEscalationDetails.match(/\b(202\d)\b/);
+    if (yearMatch) {
+      const currentYearVal = parseInt(yearMatch[1], 10);
+      nextEscalationDetails = nextEscalationDetails.replace(yearMatch[1], String(currentYearVal + 1));
+    } else {
+      nextEscalationDetails = `${rate}% starting March ${new Date().getFullYear() + 1}`;
+    }
+    
+    const updatedTenant = {
+      ...tenant,
+      rentGross: nextRentGross,
+      totalDue: nextRentGross,
+      rentNet,
+      vat,
+      ewt,
+      escalationDetails: nextEscalationDetails
+    };
+
+    try {
+      await updateTenantMutation.mutateAsync(updatedTenant);
+      toast({ 
+        title: "Rent Escalated!", 
+        description: `Rent increased to ₱${nextRentGross.toLocaleString()} and taxes recalculated. Next escalation details: ${nextEscalationDetails}.` 
+      });
+      setEditRent(nextRentGross.toString());
+      setEditEscalationDetails(nextEscalationDetails);
+    } catch (err: any) {
+      toast({ 
+        title: "Error Applying Escalation", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    }
   };
 
   // Filter Logic
@@ -264,6 +379,54 @@ const TenantProfile = ({ tenant, onBack }: TenantProfileProps) => {
 
             {!isEditingLease ? (
               <div className="space-y-4">
+                {(() => {
+                  const escalation = getNextEscalation(tenant);
+                  if (!escalation) return null;
+                  const [yearStr, monthStr] = escalation.nextMonth.split('-');
+                  const monthsNames: { [key: string]: string } = {
+                    "01": "January", "02": "February", "03": "March", "04": "April",
+                    "05": "May", "06": "June", "07": "July", "08": "August",
+                    "09": "September", "10": "October", "11": "November", "12": "December"
+                  };
+                  const monthName = monthsNames[monthStr] || monthStr;
+                  const formattedMonth = `${monthName} ${yearStr}`;
+                  return (
+                    <div className={cn(
+                      "p-3 rounded-lg border flex flex-col gap-2 text-xs",
+                      escalation.isDue 
+                        ? "bg-amber-500/10 border-amber-500/20 text-amber-200" 
+                        : "bg-indigo-500/10 border-indigo-500/20 text-indigo-200"
+                    )}>
+                      <div className="flex items-start gap-2">
+                        <TrendingUp className={cn("h-4 w-4 shrink-0 mt-0.5", escalation.isDue ? "text-amber-400" : "text-indigo-400")} />
+                        <div>
+                          <p className="font-bold">
+                            {escalation.isDue ? "🔔 Rent Escalation Due!" : "📅 Upcoming Rent Escalation"}
+                          </p>
+                          <p className="text-muted-foreground mt-0.5">
+                            {escalation.isDue 
+                              ? `A ${escalation.rate}% rent increase was scheduled for ${formattedMonth}.`
+                              : `Scheduled for ${formattedMonth} (${escalation.rate}% rate).`
+                            }
+                          </p>
+                          <p className="font-mono mt-1 text-[11px]">
+                            Current: ₱{(tenant.rentGross).toLocaleString(undefined, { minimumFractionDigits: 2 })} → Suggested: <span className="font-bold text-emerald-400">₱{escalation.suggestedRent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </p>
+                        </div>
+                      </div>
+                      {escalation.isDue && !isViewer && (
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleApplyEscalation(escalation.suggestedRent)} 
+                          className="w-full h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1 mt-1 font-semibold"
+                          disabled={updateTenantMutation.isPending}
+                        >
+                          Apply {escalation.rate}% Escalation
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Monthly Rent</span>
                   <span className="font-mono font-bold text-lg">₱{(tenant.totalDue || tenant.rentGross).toLocaleString()}</span>
